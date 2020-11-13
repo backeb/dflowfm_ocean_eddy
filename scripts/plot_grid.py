@@ -13,16 +13,21 @@ from dfm_tools.get_nc import get_netdata, get_ncmodeldata, plot_netmapdata
 from dfm_tools.get_nc_helpers import get_ncvardimlist, get_timesfromnc, get_hisstationlist
 import matplotlib.pyplot as plt
 
-"set filename - note use *_map.nc to plot grid"
-fname = 'C:\oceaneddy\DFM_OUTPUT_oceaneddy\oceaneddy_map.nc'
+cnt = 0
+fig, axs = plt.subplots(1, 4, sharey=True, figsize=(15, 10))
 
-ds = get_netdata(file_nc=fname)
-fig, ax = plt.subplots()
-pc = plot_netmapdata(ds.verts, 
-                     values=None, 
-                     ax=None, 
-                     linewidth=0.5, 
-                     color="crimson", 
-                     facecolor="None")
-ax.set_aspect('equal')
+for i in [0, 30, 60, 90]:
+
+    ugrid_all = get_netdata(file_nc=fname)
+
+    #plot water level on map
+    ssh = get_ncmodeldata(file_nc=fname,
+                        varname='mesh2d_s1', 
+                        timestep=i)
+
+    pc = plot_netmapdata(ugrid_all.verts, values=ssh[0,:], ax=axs[cnt], linewidth=0.5, cmap="jet")
+    pc.set_clim([0, 0.025])
+    axs[cnt].set_title('t = '+str(i)+' days')
+    axs[cnt].set_aspect('equal')
+    cnt = cnt + 1
 
