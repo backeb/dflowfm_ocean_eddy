@@ -18,3 +18,9 @@ conda install -c conda-forge notebook
 conda install -c anaconda ipykernel
 python -m ipykernel install --user --name=dfm_tools_env
 ```
+
+Start the Notebook from the activated dfm_tools_env, e.g.
+```
+conda activate dfm_tools_env
+jupyter-notebook BaroclinicVortex.ipynb
+```
