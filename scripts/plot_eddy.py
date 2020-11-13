@@ -13,42 +13,20 @@ from dfm_tools.get_nc import get_netdata, get_ncmodeldata, plot_netmapdata
 from dfm_tools.get_nc_helpers import get_ncvardimlist, get_timesfromnc, get_hisstationlist
 import matplotlib.pyplot as plt
 
-"set filename - note use *_map.nc to plot grid"
+#set filename
 fname = 'C:\oceaneddy\DFM_OUTPUT_oceaneddy\oceaneddy_map.nc'
 
-ugrid_all = get_netdata(file_nc=fname)
+for i in [0, 30, 60, 90]:
 
-#plot water level on map
-ssh = get_ncmodeldata(file_nc=fname, 
-                      varname='mesh2d_s1', 
-                      timestep=0)
-fig, ax = plt.subplots()
-pc = plot_netmapdata(ugrid_all.verts, 
-                     values=ssh[0,:], 
-                     ax=None, 
-                     linewidth=0.5, 
-                     cmap="jet")
-#pc.set_clim([-0.5,1])
-fig.colorbar(pc, ax=ax)
-#ax.set_title('%s (%s)'%(ssh.var_varname, ssh.var_ncvarobject.units))
-ax.set_xlim(60000, 140000)
-ax.set_ylim(60000, 140000)
-ax.set_title('Baroclinic Vortex: t = 0 days')
-ax.set_aspect('equal')
+    ugrid_all = get_netdata(file_nc=fname)
 
-ssh = get_ncmodeldata(file_nc=fname, 
-                      varname='mesh2d_s1', 
-                      timestep=240)
-fig, ax = plt.subplots()
-pc = plot_netmapdata(ugrid_all.verts, 
-                     values=ssh[0,:], 
-                     ax=None, 
-                     linewidth=0.5, 
-                     cmap="jet")
-#pc.set_clim([-0.5,1])
-fig.colorbar(pc, ax=ax)
-#ax.set_title('%s (%s)'%(ssh.var_varname, ssh.var_ncvarobject.units))
-ax.set_xlim(60000, 140000)
-ax.set_ylim(60000, 140000)
-ax.set_title('Baroclinic Vortex: t = 240 days')
-ax.set_aspect('equal')
+    ssh = get_ncmodeldata(file_nc=fname,
+                        varname='mesh2d_s1', 
+                        timestep=i)
+
+    pc = plot_netmapdata(ugrid_all.verts, values=ssh[0,:], ax=axs[cnt], linewidth=0.5, cmap="jet")
+    pc.set_clim([0, 0.025])
+    axs[cnt].set_title('t = '+str(i)+' days')
+    axs[cnt].set_aspect('equal')
+    cnt = cnt + 1
+
