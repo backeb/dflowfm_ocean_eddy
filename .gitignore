@@ -3,3 +3,4 @@
 *.md~
 *.un~
 *.py~
+notebooks/debug.log
