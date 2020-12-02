@@ -36,6 +36,13 @@ for i in [30, 60, 90, 120]:
     #ax.set_title('%s (%s)'%(ssh.var_varname, ssh.var_ncvarobject.units))
     axs[cnt].set_title('t = '+str(i)+' days')
     axs[cnt].set_aspect('equal')
+    axs[cnt].set_xticks(np.arange(0,220000,20000))
+    axs[cnt].set_xticklabels(np.arange(-50,60,10))
+    axs[cnt].set_xlabel('Distance (km)')
+    if cnt == 0:
+        axs[cnt].set_yticks(np.arange(0,220000,20000))
+        axs[cnt].set_yticklabels(np.arange(-50,60,10))
+        axs[cnt].set_ylabel('Distance (km)')
 
     cnt = cnt + 1
 

@@ -1,12 +1,14 @@
 # D-FlowFM_baroclinic_eddy_test
 
 ## Purpose: 
-Notebook to analyse output from idealised D-Flow FM simulations of a baroclinic eddy.
+Scripts and Jupyter Notebooks to analyse output from idealised D-Flow FM simulations of a baroclinic eddy.
 
 ## Installation:
-The Notebook makes use of [dfm_tools](https://github.com/openearth/dfm_tools).
+The scripts and notebooks make use of [dfm_tools](https://github.com/openearth/dfm_tools).
 
-Follow the below steps to set up the Notebook:
+To use dfm_tools in Spyder, follow the [dfm_tools installation instructions](https://github.com/openearth/dfm_tools#installation). 
+
+Follow the below steps to set up dfm_tools to use in a Jupyter Notebooks:
 ```
 conda create --name dfm_tools_env -c conda-forge python=3.7 git spyder -y
 conda activate dfm_tools_env
