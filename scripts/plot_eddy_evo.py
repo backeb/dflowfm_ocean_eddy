@@ -3,9 +3,11 @@
 Created on Wed Nov 11 11:37:21 2020
 Updated on 
 
-Purpose: plot eddy evolution on map
+@purpose: 
+    plot eddy evolution on map
 
-@author: backeb
+@author: 
+    backeb
 """
 
 "import libraries"
@@ -17,6 +19,7 @@ import numpy as np
 #set filename
 fname = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0\oceaneddymankmx0_map.nc'
 
+ugrid_all = get_netdata(file_nc=fname)
 ssh0 = get_ncmodeldata(file_nc=fname, varname='mesh2d_s1', timestep=0)
 maxi = np.argmax(ssh0)
 x0, y0 = ugrid_all.verts[maxi,:,:].mean(axis = 0)
@@ -26,8 +29,6 @@ cnt = 0
 fig, axs = plt.subplots(1, 4, sharey=True, figsize=(15, 5))
 
 for i in [30, 60, 90, 120]:
-
-    ugrid_all = get_netdata(file_nc=fname)
 
     #plot water level on map
     ssh = get_ncmodeldata(file_nc=fname, 
