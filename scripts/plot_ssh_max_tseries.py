@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 #set filename
-fname = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0\oceaneddymankmx0_map.nc'
+fname = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-expt2\oceaneddymankmx0_map.nc'
 
 ds = xr.open_dataset(fname)
 ssh = ds.mesh2d_s1.data
@@ -28,11 +28,7 @@ for i in np.arange(0,len(ssh_max),1):
 fig, ax = plt.subplots(figsize=(15, 5))
 ax.plot(ssh_max,'.',label = 'Expt 1')
 ax.set_title('Sea surface height maximum over time')
-# ax.set_xticks(np.arange(0,220000,20000))
-# ax.set_xticklabels(np.arange(-50,60,10))
 ax.set_xlabel('timestep')
-# ax.set_yticks(np.arange(0,220000,20000))
-# ax.set_yticklabels(np.arange(-50,60,10))
 ax.set_ylabel('Sea surface height (m)')
 ax.legend()
 

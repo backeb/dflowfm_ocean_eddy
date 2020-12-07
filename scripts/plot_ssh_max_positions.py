@@ -13,7 +13,7 @@ import numpy as np
 import xarray as xr
 
 #set filename
-fname = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0\oceaneddymankmx0_map.nc'
+fname = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-expt2\oceaneddymankmx0_map.nc'
 
 ds = xr.open_dataset(fname)
 ugrid_all = get_netdata(file_nc=fname)
@@ -37,10 +37,20 @@ pc = plot_netmapdata(ugrid_all.verts,
 ax.set_aspect('equal')
 ax.plot(x, y,'r-',label = 'Expt 1')
 ax.set_title('Maximum sea surface height location')
-ax.set_xticks(np.arange(0,220000,20000))
-ax.set_xticklabels(np.arange(-50,60,10))
+xticks = np.linspace(np.min(ds.mesh2d_node_x.data),
+                     np.max(ds.mesh2d_node_x.data),
+                     num = 10,
+                     endpoint = True)
+xticklabels = (xticks - np.median(xticks))/1000
+yticks = np.linspace(np.min(ds.mesh2d_node_y.data),
+                     np.max(ds.mesh2d_node_y.data),
+                     num = 10,
+                     endpoint = True)
+yticklabels = (yticks - np.median(yticks))/1000
+ax.set_xticks(xticks)
+ax.set_xticklabels(xticklabels.astype(int))
 ax.set_xlabel('Distance (km)')
-ax.set_yticks(np.arange(0,220000,20000))
-ax.set_yticklabels(np.arange(-50,60,10))
+ax.set_yticks(yticks)
+ax.set_yticklabels(yticklabels.astype(int))
 ax.set_ylabel('Distance (km)')
 ax.legend()
