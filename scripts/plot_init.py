@@ -11,15 +11,17 @@ Created on Wed Dec  2 13:42:43 2020
 # import libraries
 from dfm_tools.get_nc import get_netdata, get_ncmodeldata, plot_netmapdata
 from dfm_tools.get_nc_helpers import get_ncvardimlist, get_timesfromnc, get_hisstationlist
-#import xarray as xr
+import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
 #from scipy.interpolate import griddata
 
 # set filename
-fname = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-expt2\oceaneddymankmx0_map.nc'
+fname = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0\oceaneddymankmx0_map.nc'
 
 ugrid_all = get_netdata(file_nc=fname)
+ds = xr.open_dataset(fname)
+
 ssh = get_ncmodeldata(file_nc=fname, varname='mesh2d_s1', timestep=0)
 
 # find location of max ssh to add to plot

@@ -16,7 +16,7 @@ import numpy as np
 import xarray as xr
 
 "set filename - note use *_map.nc to plot grid"
-fname = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-expt2\oceaneddymankmx0_map.nc'
+fname = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-expt1\oceaneddymankmx0_map.nc'
 
 ugrid_all = get_netdata(file_nc=fname)
 ds = xr.open_dataset(fname)

@@ -4,7 +4,7 @@ Created on Wed Nov 11 11:37:21 2020
 Updated on 
 
 @purpose: 
-    plot eddy evolution on map
+    plot eddy evolution on map and position of max ssh
 
 @author: 
     backeb
@@ -17,35 +17,39 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
+"define some variables for plotting"
+expt  = 'expt4'
+start = 0
+stop  = 240
+
 #set filename
-fname = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-expt2\oceaneddymankmx0_map.nc'
+fname = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-'+expt+'\oceaneddymankmx0_map.nc'
+days2plt = np.linspace(start, stop, num = 4, endpoint = True)
 
 ugrid_all = get_netdata(file_nc=fname)
 ds = xr.open_dataset(fname)
 
-ssh0 = get_ncmodeldata(file_nc=fname, varname='mesh2d_s1', timestep=0)
-maxi = np.argmax(ssh0)
-x0, y0 = ugrid_all.verts[maxi,:,:].mean(axis = 0)
+x = np.empty(ds.time.size)
+y = np.empty(ds.time.size)
 
+for i in np.arange(0, ds.time.size, 1):
+    ssh = ds.mesh2d_s1.data[i,:]
+    maxi = np.argmax(ssh)
+    x[i], y[i] = ugrid_all.verts[maxi,:,:].mean(axis = 0)
 
 cnt = 0
 fig, axs = plt.subplots(1, 4, sharey=True, figsize=(15, 5))
 
-for i in [30, 60, 90, 120]:
+for i in days2plt.astype(int):
 
     #plot water level on map
     ssh = get_ncmodeldata(file_nc=fname, 
                           varname='mesh2d_s1', 
                           timestep=i)
     
-    # find location of max ssh to add to plot
-    maxi = np.argmax(ssh)
-    
-    #    fig, axs = plt.subplots(2, int(len(tsteps2plot)/2), sharey=True)
     pc = plot_netmapdata(ugrid_all.verts, values=ssh[0,:], ax=axs[cnt], linewidth=0.5, cmap="jet")
     pc.set_clim([0, 0.025])
-    x, y = ugrid_all.verts[maxi,:,:].mean(axis = 0)
-    axs[cnt].plot((x0,x),(y0, y),'wx-')
+    axs[cnt].plot(x[:i],y[:i],'r.', markersize = 2)
     #ax.set_title('%s (%s)'%(ssh.var_varname, ssh.var_ncvarobject.units))
     axs[cnt].set_title('t = '+str(i)+' days')
     axs[cnt].set_aspect('equal')
