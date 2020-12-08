@@ -18,7 +18,7 @@ import numpy as np
 import xarray as xr
 
 "define some variables for plotting"
-expt  = 'expt4'
+expt  = 'expt6'
 start = 0
 stop  = 240
 
