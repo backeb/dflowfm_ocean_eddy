@@ -19,7 +19,7 @@ import xarray as xr
 
 "define some variables for plotting"
 expt  = 'expt13'
-start = 0
+start = 0cd 
 stop  = 120
 
 #set filename
