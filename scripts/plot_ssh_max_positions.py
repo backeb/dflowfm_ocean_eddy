@@ -17,53 +17,81 @@ import numpy as np
 import xarray as xr
 
 #set filename
-fname1 = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-expt1\oceaneddymankmx0_map.nc'
-fname4 = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-expt4\oceaneddymankmx0_map.nc'
-
-ds1 = xr.open_dataset(fname1)
-ugrid_all1 = get_netdata(file_nc=fname1)
-ds4 = xr.open_dataset(fname4)
-ugrid_all4 = get_netdata(file_nc=fname4)
-
-x1 = np.empty(ds1.time.size)
-y1 = np.empty(ds1.time.size)
-x4 = np.empty(ds4.time.size)
-y4 = np.empty(ds4.time.size)
+fname11 = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-expt11\oceaneddymankmx0_map.nc' # beta plane 100x100_dx2000
+fname12 = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-expt12\oceaneddymankmx0_map.nc' # sferic 100x100_dx2000
+fname13 = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-expt13\oceaneddymankmx0_map.nc' # sferic 100x100_dx2000 oceaneddysizefrac=0.025 
 
 
-for i in np.arange(0, ds1.time.size, 1):
-    ssh1 = ds1.mesh2d_s1.data[i,:]
-    ssh4 = ds4.mesh2d_s1.data[i,:]
-    maxi1 = np.argmax(ssh1)
-    maxi4 = np.argmax(ssh4)
-    x1[i], y1[i] = ugrid_all1.verts[maxi1,:,:].mean(axis = 0)
-    x4[i], y4[i] = ugrid_all4.verts[maxi4,:,:].mean(axis = 0)
+ds11 = xr.open_dataset(fname11)
+ugrid_all11 = get_netdata(file_nc=fname11)
+ds12 = xr.open_dataset(fname12)
+ugrid_all12 = get_netdata(file_nc=fname12)
+ds13 = xr.open_dataset(fname13)
+ugrid_all13 = get_netdata(file_nc=fname13)
 
-fig, ax = plt.subplots()
-pc = plot_netmapdata(ugrid_all1.verts, 
+
+x11 = np.empty(ds11.time.size)
+y11 = np.empty(ds11.time.size)
+x12 = np.empty(ds12.time.size)
+y12 = np.empty(ds12.time.size)
+x13 = np.empty(ds13.time.size)
+y13 = np.empty(ds13.time.size)
+
+for i in np.arange(0, ds11.time.size, 1):
+    ssh11 = ds11.mesh2d_s1.data[i,:]
+    ssh12 = ds12.mesh2d_s1.data[i,:]
+    ssh13 = ds13.mesh2d_s1.data[i,:]
+    maxi11 = np.argmax(ssh11)
+    maxi12 = np.argmax(ssh12)
+    maxi13 = np.argmax(ssh13)
+    x11[i], y11[i] = ugrid_all11.verts[maxi11,:,:].mean(axis = 0)
+    x12[i], y12[i] = ugrid_all12.verts[maxi12,:,:].mean(axis = 0)
+    x13[i], y13[i] = ugrid_all13.verts[maxi13,:,:].mean(axis = 0)
+    
+fig, axs = plt.subplots(1, 2, figsize=(15, 5))
+pc = plot_netmapdata(ugrid_all11.verts, 
                      values=None, 
-                     ax=None, 
+                     ax=axs[0],
                      linewidth=0.1, 
                      color="gray", 
                      facecolor="None")
-ax.set_aspect('equal')
-ax.plot(x1, y1, '-', label = 'Expt 1')
-ax.plot(x4, y4, '-', label = 'Expt 4')
-ax.set_title('Maximum sea surface height location')
-xticks = np.linspace(np.min(ds1.mesh2d_node_x.data),
-                     np.max(ds1.mesh2d_node_x.data),
-                     num = 10,
+axs[0].set_aspect('equal')
+axs[0].plot(x11, y11, '-', label = 'Expt 11')
+axs[0].set_title('Beta plane expt')
+xticks = np.linspace(np.min(ds11.mesh2d_node_x.data),
+                     np.max(ds11.mesh2d_node_x.data),
+                     num = 5,
                      endpoint = True)
-xticklabels = (xticks - np.median(xticks))/1000
-yticks = np.linspace(np.min(ds1.mesh2d_node_y.data),
-                     np.max(ds1.mesh2d_node_y.data),
-                     num = 10,
+yticks = np.linspace(np.min(ds11.mesh2d_node_y.data),
+                     np.max(ds11.mesh2d_node_y.data),
+                     num = 5,
                      endpoint = True)
-yticklabels = (yticks - np.median(yticks))/1000
-ax.set_xticks(xticks)
-ax.set_xticklabels(xticklabels.astype(int))
-ax.set_xlabel('Distance (km)')
-ax.set_yticks(yticks)
-ax.set_yticklabels(yticklabels.astype(int))
-ax.set_ylabel('Distance (km)')
-ax.legend()
+axs[0].set_xticks(xticks)
+axs[0].set_xlabel('%s (%s)'%(ds11.mesh2d_node_x.long_name, ds11.mesh2d_node_x.units))
+axs[0].set_yticks(yticks)
+axs[0].set_ylabel('%s (%s)'%(ds11.mesh2d_node_y.long_name, ds11.mesh2d_node_y.units))
+axs[0].legend()
+
+pc = plot_netmapdata(ugrid_all12.verts, 
+                     values=None, 
+                     ax=axs[1], 
+                     linewidth=0.1, 
+                     color="gray", 
+                     facecolor="None")
+axs[1].set_aspect('equal')
+axs[1].plot(x12, y12, '-', label = 'Expt 12')
+axs[1].plot(x13, y13, '-', label = 'Expt 13')
+axs[1].set_title('Spherical grid expts')
+xticks = np.linspace(np.min(ds12.mesh2d_node_x.data),
+                     np.max(ds12.mesh2d_node_x.data),
+                     num = 5,
+                     endpoint = True)
+yticks = np.linspace(np.min(ds12.mesh2d_node_y.data),
+                     np.max(ds12.mesh2d_node_y.data),
+                     num = 5,
+                     endpoint = True)
+axs[1].set_xticks(xticks)
+axs[1].set_xlabel('%s (%s)'%(ds12.mesh2d_node_x.long_name, ds12.mesh2d_node_x.units))
+axs[1].set_yticks(yticks)
+axs[1].set_ylabel('%s (%s)'%(ds12.mesh2d_node_y.long_name, ds12.mesh2d_node_y.units))
+axs[1].legend()

@@ -17,24 +17,32 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 #set filename
-fname1 = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-expt1\oceaneddymankmx0_map.nc'
-fname4 = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-expt4\oceaneddymankmx0_map.nc'
+fname11 = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-expt11\oceaneddymankmx0_map.nc' # beta plane 100x100_dx2000
+fname12 = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-expt12\oceaneddymankmx0_map.nc' # sferic 100x100_dx2000
+fname13 = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-expt13\oceaneddymankmx0_map.nc' # sferic 100x100_dx2000 oceaneddysizefrac=0.025 
 
-ds1 = xr.open_dataset(fname1)
-ssh1 = ds1.mesh2d_s1.data
-ssh_max1 = np.empty(ssh1.shape[0])
+ds11 = xr.open_dataset(fname11)
+ssh11 = ds11.mesh2d_s1.data
+ssh_max11 = np.empty(ssh11.shape[0])
 
-ds4 = xr.open_dataset(fname4)
-ssh4 = ds4.mesh2d_s1.data
-ssh_max4 = np.empty(ssh4.shape[0])
+ds12 = xr.open_dataset(fname12)
+ssh12 = ds12.mesh2d_s1.data
+ssh_max12 = np.empty(ssh12.shape[0])
 
-for i in np.arange(0,len(ssh_max1),1):
-    ssh_max1[i] = np.nanmax(ssh1[i,:])
-    ssh_max4[i] = np.nanmax(ssh4[i,:])
+ds13 = xr.open_dataset(fname13)
+ssh13 = ds13.mesh2d_s1.data
+ssh_max13 = np.empty(ssh13.shape[0])
+
+for i in np.arange(0,len(ssh_max11),1):
+    ssh_max11[i] = np.nanmax(ssh11[i,:])
+    ssh_max12[i] = np.nanmax(ssh12[i,:])
+    ssh_max13[i] = np.nanmax(ssh13[i,:])
     
 fig, ax = plt.subplots(figsize=(15, 5))
-ax.plot(ssh_max1,'.',label = 'Expt 1')
-ax.plot(ssh_max4,'.',label = 'Expt 4')
+ax.plot(ssh_max11,'.',label = 'Expt 11')
+ax.plot(ssh_max12,'.',label = 'Expt 12')
+ax.plot(ssh_max13,'.',label = 'Expt 13')
+ax.set_ylim(bottom = 0)
 ax.set_title('Sea surface height maximum over time')
 ax.set_xlabel('timestep')
 ax.set_ylabel('Sea surface height (m)')

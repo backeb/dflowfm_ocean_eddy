@@ -18,9 +18,9 @@ import numpy as np
 import xarray as xr
 
 "define some variables for plotting"
-expt  = 'expt6'
+expt  = 'expt13'
 start = 0
-stop  = 240
+stop  = 120
 
 #set filename
 fname = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-'+expt+'\oceaneddymankmx0_map.nc'
@@ -50,26 +50,21 @@ for i in days2plt.astype(int):
     pc = plot_netmapdata(ugrid_all.verts, values=ssh[0,:], ax=axs[cnt], linewidth=0.5, cmap="jet")
     pc.set_clim([0, 0.025])
     axs[cnt].plot(x[:i],y[:i],'r.', markersize = 2)
-    #ax.set_title('%s (%s)'%(ssh.var_varname, ssh.var_ncvarobject.units))
-    axs[cnt].set_title('t = '+str(i)+' days')
+    axs[cnt].set_title(np.datetime_as_string(ds.time.data[i], unit = 'h'))
     axs[cnt].set_aspect('equal')
     xticks = np.linspace(np.min(ds.mesh2d_node_x.data),
                      np.max(ds.mesh2d_node_x.data),
                      num = 5,
                      endpoint = True)
-    xticklabels = (xticks - np.median(xticks))/1000
     axs[cnt].set_xticks(xticks)
-    axs[cnt].set_xticklabels(xticklabels.astype(int))
-    axs[cnt].set_xlabel('Distance (km)')
+    axs[cnt].set_xlabel('%s (%s)'%(ds.mesh2d_node_x.long_name, ds.mesh2d_node_x.units))
     if cnt == 0:
         yticks = np.linspace(np.min(ds.mesh2d_node_y.data),
                      np.max(ds.mesh2d_node_y.data),
-                     num = 10,
+                     num = 5,
                      endpoint = True)
-        yticklabels = (yticks - np.median(yticks))/1000
         axs[cnt].set_yticks(yticks)
-        axs[cnt].set_yticklabels(yticklabels.astype(int))
-        axs[cnt].set_ylabel('Distance (km)')
+        axs[cnt].set_ylabel('%s (%s)'%(ds.mesh2d_node_y.long_name, ds.mesh2d_node_y.units))
 
     cnt = cnt + 1
 

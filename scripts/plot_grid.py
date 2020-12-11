@@ -15,8 +15,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
+expt = 'expt10'
+
 "set filename - note use *_map.nc to plot grid"
-fname = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-expt1\oceaneddymankmx0_map.nc'
+fname = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-'+expt+'\oceaneddymankmx0_map.nc'
 
 ugrid_all = get_netdata(file_nc=fname)
 ds = xr.open_dataset(fname)
@@ -31,18 +33,14 @@ pc = plot_netmapdata(ugrid_all.verts,
 ax.set_aspect('equal')
 
 xticks = np.linspace(np.min(ds.mesh2d_node_x.data),
-                     np.max(ds.mesh2d_node_x.data),
-                     num = 10,
-                     endpoint = True)
-xticklabels = (xticks - np.median(xticks))/1000
+                      np.max(ds.mesh2d_node_x.data),
+                      num = 5,
+                      endpoint = True)
 yticks = np.linspace(np.min(ds.mesh2d_node_y.data),
-                     np.max(ds.mesh2d_node_y.data),
-                     num = 10,
-                     endpoint = True)
-yticklabels = (yticks - np.median(yticks))/1000
+                      np.max(ds.mesh2d_node_y.data),
+                      num = 5,
+                      endpoint = True)
 ax.set_xticks(xticks)
-ax.set_xticklabels(xticklabels.astype(int))
-ax.set_xlabel('Distance (km)')
+ax.set_xlabel('%s (%s)'%(ds.mesh2d_node_x.long_name, ds.mesh2d_node_x.units))
 ax.set_yticks(yticks)
-ax.set_yticklabels(yticklabels.astype(int))
-ax.set_ylabel('Distance (km)')
+ax.set_ylabel('%s (%s)'%(ds.mesh2d_node_y.long_name, ds.mesh2d_node_y.units))
