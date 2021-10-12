@@ -15,10 +15,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
 
-expt = 'expt10'
+expt = 'expt00'
 
 "set filename - note use *_map.nc to plot grid"
-fname = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-'+expt+'\oceaneddymankmx0_map.nc'
+fname = 'C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\DFM_OUTPUT_oceaneddy_'+expt+'\oceaneddy_'+expt+'_map.nc'
 
 ugrid_all = get_netdata(file_nc=fname)
 ds = xr.open_dataset(fname)
@@ -32,15 +32,15 @@ pc = plot_netmapdata(ugrid_all.verts,
                      facecolor="None")
 ax.set_aspect('equal')
 
-xticks = np.linspace(np.min(ds.mesh2d_node_x.data),
-                      np.max(ds.mesh2d_node_x.data),
+xticks = np.linspace(np.min(ds.NetNode_x.data),
+                      np.max(ds.NetNode_x.data),
                       num = 5,
                       endpoint = True)
-yticks = np.linspace(np.min(ds.mesh2d_node_y.data),
-                      np.max(ds.mesh2d_node_y.data),
+yticks = np.linspace(np.min(ds.NetNode_y.data),
+                      np.max(ds.NetNode_y.data),
                       num = 5,
                       endpoint = True)
 ax.set_xticks(xticks)
-ax.set_xlabel('%s (%s)'%(ds.mesh2d_node_x.long_name, ds.mesh2d_node_x.units))
+ax.set_xlabel('%s (%s)'%(ds.NetNode_x.long_name, ds.NetNode_x.units))
 ax.set_yticks(yticks)
-ax.set_ylabel('%s (%s)'%(ds.mesh2d_node_y.long_name, ds.mesh2d_node_y.units))
+ax.set_ylabel('%s (%s)'%(ds.NetNode_y.long_name, ds.NetNode_y.units))

@@ -85,7 +85,7 @@ pc = plot_netmapdata(ugrid_all12.verts,
                      linewidth=0.1, 
                      color="gray", 
                      facecolor="None")
-axs[1].set_aspect('equal')
+# axs[1].set_aspect('equal')
 axs[1].plot(x12, y12, '-', label = 'Expt 12')
 axs[1].plot(x13, y13, '-', label = 'Expt 13')
 axs[1].plot(x14, y14, '-', label = 'Expt 14')
