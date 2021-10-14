@@ -7,7 +7,9 @@ based on make_vortex.m and barocvortex.m provided by P. Penven
 
 dependencies:
     numpy
-    croco_vgrid.py (provided by P. Penven)
+    croco_vgrid, zlevs (provided by P. Penven)
+    tpx_tools (provided by P. Penven)
+    interp_Cgrid (provided by P. Penven)
 
 Ref:    Penven, P., L. Debreu, P. Marchesiello et J.C. McWilliams,   
         Application of the ROMS embedding procedure for the Central
@@ -20,6 +22,8 @@ Ref:    Penven, P., L. Debreu, P. Marchesiello et J.C. McWilliams,
 #
 import numpy as np
 from croco_vgrid import zlevs
+import matplotlib.pyplot as plt
+
 
 #
 # Parameters for the grid
@@ -173,3 +177,47 @@ D_u=np.squeeze(np.sum(dzu));
 D_v=np.squeeze(np.sum(dzv));
 ubar=np.squeeze(hu/D_u);
 vbar=np.squeeze(hv/D_v);
+
+#
+# plot vortex
+#
+fig, ax = plt.subplots(figsize=(15, 10))
+#pc = plt.contourf(X, Y, zeta, vmin = 0, vmax = 1, cmap="jet")
+pc = plt.pcolormesh(X, Y, zeta, vmin = 0, vmax = 1, cmap="jet")
+ax.set_title('%s (%s)'%("Initial condition: sea level", "m"))
+ax.set_aspect('equal')
+fig.colorbar(pc, ax=ax)
+xticks = np.linspace(np.min(X),
+                     np.max(X),
+                     num = 5,
+                     endpoint = True)
+yticks = np.linspace(np.min(Y),
+                     np.max(Y),
+                     num = 5,
+                     endpoint = True)
+ax.set_xticks(xticks)
+ax.set_xlabel('%s (%s)'%("Distance", "m"))
+ax.set_yticks(yticks)
+ax.set_ylabel('%s (%s)'%("Distance", "m"))
+ax = plt.quiver(X, Y, ur[-1, :, :], vr[-1, :, :], color = "w", scale = 50)
+
+#spd = np.sqrt(ur**2+vr**2)
+#fig, ax = plt.subplots(figsize=(15, 10))
+##pc = plt.contourf(X, Y, zeta, vmin = 0, vmax = 1, cmap="jet")
+#pc = plt.pcolormesh(X, Y, spd[-1,:,:], vmin = 0, vmax = np.max(spd), cmap="jet")
+#ax.set_title('%s (%s)'%("Initial condition: sea level", "m"))
+#ax.set_aspect('equal')
+#fig.colorbar(pc, ax=ax)
+#xticks = np.linspace(np.min(X),
+#                     np.max(X),
+#                     num = 5,
+#                     endpoint = True)
+#yticks = np.linspace(np.min(Y),
+#                     np.max(Y),
+#                     num = 5,
+#                     endpoint = True)
+#ax.set_xticks(xticks)
+#ax.set_xlabel('%s (%s)'%("Distance", "m"))
+#ax.set_yticks(yticks)
+#ax.set_ylabel('%s (%s)'%("Distance", "m"))
+

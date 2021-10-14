@@ -4,3 +4,4 @@
 *.un~
 *.py~
 notebooks/debug.log
+*.pyc
