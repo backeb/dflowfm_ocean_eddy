@@ -1,4 +1,4 @@
-# D-FlowFM_baroclinic_eddy_test
+# dflowfm_ocean_eddy
 
 ## Purpose: 
 Scripts and Jupyter Notebooks to analyse output from idealised D-Flow FM simulations of a baroclinic eddy.
