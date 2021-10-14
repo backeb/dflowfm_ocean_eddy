@@ -88,20 +88,24 @@ f=f0+beta*Y;
 #
 P0=rho0*f0*umax*radius*np.sqrt(np.exp(1)/2);
 P1=Pa+P0*np.exp(-(np.power(X,2)+np.power(Y,2))/radius**2);
+
 #
 # Calculate rho at z=0
 #
 a=-P0*(1-np.exp(-H))/(g*(H-1+np.exp(-H)));
 rho1=rho0+a*np.exp(-(np.power(X,2)+np.power(Y,2))/radius**2);
+
 #
 # Surface elevation 
 #
 zeta=(P1-Pa)/(g*rho1);
+
 #
 # Vertical grid 
 #
 zw=zlevs(h0,zeta,theta_s,theta_b,hc,N,'w',vtransform);
 zr=zlevs(h0,zeta,theta_s,theta_b,hc,N,'r',vtransform);
+
 #
 # Density
 #
@@ -117,6 +121,7 @@ yr = np.tile(yr, (N, 1, 1))
 rho=rho0*(1-N2*zr/g);
 rhodyn=-P0*(1-np.exp(-zr-H))*np.exp(-(np.power(xr,2)+np.power(yr,2))/radius**2)/(g*(H-1+np.exp(-H)));
 rho[zr>-H]=rho[zr>-H]+rhodyn[zr>-H];
+
 #
 # Temperature
 #
@@ -125,6 +130,7 @@ rho[zr>-H]=rho[zr>-H]+rhodyn[zr>-H];
 R0=30;
 TCOEF=0.28;
 t=(-rho+1000+R0)/TCOEF;
+
 #
 # U and V
 #
@@ -141,6 +147,7 @@ t=(-rho+1000+R0)/TCOEF;
 #F=(H-1+zv+np.exp(-zv-H))./(H-1+np.exp(-H));
 #F(zv<-H)=0;
 #v=-a.*F.*xv.*np.exp(-(xv.^2+yv.^2)/radius^2);
+
 #
 # Compute geostrophic velocities Vg
 #
@@ -148,6 +155,7 @@ F=(H-1+zr+np.exp(-zr-H))/(H-1+np.exp(-H));
 F[zr<-H]=0;
 r=np.sqrt(np.power(xr,2)+np.power(yr,2));
 Vg=-(2*r*P0*F/(rho0*f0*radius*radius))*np.exp(-np.power(r,2)/radius**2);
+
 #
 # Compute gradient wind velocities Vgr : Vgr/R^2 + f Vgr = f Vg 
 #
@@ -158,6 +166,7 @@ if len(indx)>0:
 a[a<0]=1;
 Vgr=2*Vg/(1+np.sqrt(a));
 #Vgr=Vg;
+
 #
 # Project on the grid
 #
@@ -177,6 +186,12 @@ D_u=np.squeeze(np.sum(dzu));
 D_v=np.squeeze(np.sum(dzv));
 ubar=np.squeeze(hu/D_u);
 vbar=np.squeeze(hv/D_v);
+
+#
+# write to dflowfm netcdf restart file
+#
+#TODO
+
 
 #
 # plot vortex
