@@ -7,6 +7,7 @@ based on make_vortex.m and barocvortex.m provided by P. Penven
 
 dependencies:
     numpy
+    progressbar
     croco_vgrid, zlevs (provided by P. Penven)
     tpx_tools (provided by P. Penven)
     interp_Cgrid (provided by P. Penven)
@@ -17,13 +18,15 @@ Ref:    Penven, P., L. Debreu, P. Marchesiello et J.C. McWilliams,
 
 @author: backeb
 """
+#%%
 # 
 # import libraries
 #
 import numpy as np
 from croco_vgrid import zlevs
 import matplotlib.pyplot as plt
-
+import xarray
+from scipy.interpolate import RegularGridInterpolator#, griddata
 
 #
 # Parameters for the grid
@@ -120,6 +123,9 @@ yr = np.tile(yr, (N, 1, 1))
 #
 rho=rho0*(1-N2*zr/g);
 rhodyn=-P0*(1-np.exp(-zr-H))*np.exp(-(np.power(xr,2)+np.power(yr,2))/radius**2)/(g*(H-1+np.exp(-H)));
+## ERROR RuntimeWarning: overflow encountered in exp
+## see https://stackoverflow.com/questions/40726490/overflow-error-in-pythons-numpy-exp-function
+## https://stackoverflow.com/questions/9559346/deal-with-overflow-in-exp-using-numpy
 rho[zr>-H]=rho[zr>-H]+rhodyn[zr>-H];
 
 #
@@ -152,6 +158,9 @@ t=(-rho+1000+R0)/TCOEF;
 # Compute geostrophic velocities Vg
 #
 F=(H-1+zr+np.exp(-zr-H))/(H-1+np.exp(-H));
+## ERROR RuntimeWarning: overflow encountered in exp
+## see https://stackoverflow.com/questions/40726490/overflow-error-in-pythons-numpy-exp-function
+## https://stackoverflow.com/questions/9559346/deal-with-overflow-in-exp-using-numpy
 F[zr<-H]=0;
 r=np.sqrt(np.power(xr,2)+np.power(yr,2));
 Vg=-(2*r*P0*F/(rho0*f0*radius*radius))*np.exp(-np.power(r,2)/radius**2);
@@ -187,12 +196,42 @@ D_v=np.squeeze(np.sum(dzv));
 ubar=np.squeeze(hu/D_u);
 vbar=np.squeeze(hv/D_v);
 
+#%%
+# create function with relation of lat/lon/watercolumn_grid
+#
+fpath = 'C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\DFM_OUTPUT_oceaneddy_expt00\\'
+ds = xarray.open_dataset(fpath+'oceaneddy_expt00_20010101_000000_rst.nc')
+f_amp = RegularGridInterpolator((x,y), zeta, bounds_error=False, fill_value=np.nan) 
+pli_coords = np.moveaxis(np.stack([ds.FlowElem_xzw.data,ds.FlowElem_yzw.data]),0,-1)
+
 #
 # write to dflowfm netcdf restart file
 #
-#TODO
+wds = xarray.Dataset()
+wds['timestep'] = ds.timestep
+#wds['s1'] = ds.s1
+wds['s1'] = xarray.DataArray(data=[f_amp(pli_coords)[np.newaxis]], name=ds.s1.name, attrs=ds.s1.attrs)
+#wds['s0'] = ds.s0
+wds['taus'] = ds.taus # taucurrent in flow element center
+wds['czs'] = ds.czs # Chezy roughness in flow element center
+wds['FlowElem_bl'] = ds.FlowElem_bl # bed level at flow element circumcenter
+wds['ucx'] = ds.ucx # eastward_sea_water_velocity
+wds['ucy'] = ds.ucy # northward_sea_water_velocity
+wds['unorm'] = ds.unorm # normal component of sea_water_speed
+wds['u0'] = ds.u0 # normal component of velocity through flow link at previous ti...
+wds['q1'] = ds.q1
+wds['qa'] = ds.qa
+wds['squ'] = ds.squeeze
+wds['FlowElem_xzw'] = ds.FlowElem_xzw
+wds['FlowElem_yzw'] = ds.FlowElem_yzw
 
+#np.shape(ds.s1)
+#Out[243]: (1, 32400)
+#
+#np.shape(wds.s1)
+#Out[244]: (1, 1, 32400)
 
+#%%
 #
 # plot vortex
 #

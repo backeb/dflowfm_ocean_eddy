@@ -11,9 +11,7 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import numpy as np
 
-# insert code to create the gridded data
-meshgrid
-code to create the eddy
+
 
 
 ds = xr.open_dataset('oceaneddy_expt00_20010101_000000_rst.nc')
