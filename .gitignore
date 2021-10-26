@@ -5,3 +5,4 @@
 *.py~
 notebooks/debug.log
 *.pyc
+*.nc

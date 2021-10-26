@@ -11,6 +11,9 @@ dependencies:
     croco_vgrid, zlevs (provided by P. Penven)
     tpx_tools (provided by P. Penven)
     interp_Cgrid (provided by P. Penven)
+    xarray
+    scipy.interpolate
+    os
 
 Ref:    Penven, P., L. Debreu, P. Marchesiello et J.C. McWilliams,   
         Application of the ROMS embedding procedure for the Central
@@ -27,6 +30,7 @@ from croco_vgrid import zlevs
 import matplotlib.pyplot as plt
 import xarray
 from scipy.interpolate import RegularGridInterpolator#, griddata
+import os
 
 #
 # Parameters for the grid
@@ -209,9 +213,8 @@ pli_coords = np.moveaxis(np.stack([ds.FlowElem_xzw.data,ds.FlowElem_yzw.data]),0
 #
 wds = xarray.Dataset()
 wds['timestep'] = ds.timestep
-#wds['s1'] = ds.s1
-wds['s1'] = xarray.DataArray(data=[f_amp(pli_coords)[np.newaxis]], name=ds.s1.name, attrs=ds.s1.attrs)
-#wds['s0'] = ds.s0
+wds['s1'] = xarray.DataArray(data=f_amp(pli_coords)[np.newaxis], name=ds.s1.name, dims=ds.s1.dims, attrs=ds.s1.attrs)
+wds['s0'] = xarray.DataArray(data=f_amp(pli_coords)[np.newaxis], name=ds.s0.name, dims=ds.s0.dims, attrs=ds.s0.attrs)
 wds['taus'] = ds.taus # taucurrent in flow element center
 wds['czs'] = ds.czs # Chezy roughness in flow element center
 wds['FlowElem_bl'] = ds.FlowElem_bl # bed level at flow element circumcenter
@@ -219,17 +222,21 @@ wds['ucx'] = ds.ucx # eastward_sea_water_velocity
 wds['ucy'] = ds.ucy # northward_sea_water_velocity
 wds['unorm'] = ds.unorm # normal component of sea_water_speed
 wds['u0'] = ds.u0 # normal component of velocity through flow link at previous ti...
-wds['q1'] = ds.q1
-wds['qa'] = ds.qa
-wds['squ'] = ds.squeeze
-wds['FlowElem_xzw'] = ds.FlowElem_xzw
-wds['FlowElem_yzw'] = ds.FlowElem_yzw
+wds['q1'] = ds.q1 # discharge
+wds['qa'] = ds.qa # discharge used in advection
+wds['squ'] = ds.squ # cell center outcoming flux
+wds['FlowElem_xzw'] = ds.FlowElem_xzw # longitude
+wds['FlowElem_yzw'] = ds.FlowElem_yzw # latitude
+wds.attrs=ds.attrs
 
-#np.shape(ds.s1)
-#Out[243]: (1, 32400)
-#
-#np.shape(wds.s1)
-#Out[244]: (1, 1, 32400)
+fname = "oceaneddy_init_20010101_000000_rst.nc"
+try:
+    os.remove(fpath+fname)
+except OSError:
+    pass
+print("writing datastack to netcdf4 :: "+fpath+fname)
+wds.to_netcdf(fname, 'w', 'NETCDF4')
+
 
 #%%
 #
