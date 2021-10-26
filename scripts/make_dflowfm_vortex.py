@@ -235,7 +235,7 @@ try:
 except OSError:
     pass
 print("writing datastack to netcdf4 :: "+fpath+fname)
-wds.to_netcdf(fname, 'w', 'NETCDF4')
+wds.to_netcdf(fpath+fname, 'w', 'NETCDF4')
 
 
 #%%

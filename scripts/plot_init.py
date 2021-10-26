@@ -14,17 +14,14 @@ from dfm_tools.get_nc_helpers import get_ncvardimlist, get_timesfromnc, get_hiss
 import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
-#from scipy.interpolate import griddata
-
-expt = 'expt12'
 
 # set filename
-fname = 'c:\oceaneddy\DFM_OUTPUT_oceaneddymankmx0-'+expt+'\oceaneddymankmx0_map.nc'
+fname = 'C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\DFM_OUTPUT_oceaneddy_expt00\\oceaneddy_init_20010101_000000_rst.nc'
 
-ugrid_all = get_netdata(file_nc=fname)
+ugrid_all = get_netdata(file_nc='C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\DFM_OUTPUT_oceaneddy_expt00\\oceaneddy_expt00_map.nc')
 ds = xr.open_dataset(fname)
 
-ssh = get_ncmodeldata(file_nc=fname, varname='mesh2d_s1', timestep=0)
+ssh = get_ncmodeldata(file_nc=fname, varname='s1', timestep=0)
 
 # find location of max ssh to add to plot
 maxi = np.argmax(ssh)
@@ -35,22 +32,22 @@ pc = plot_netmapdata(ugrid_all.verts, values=ssh[0,:], ax=ax, linewidth=0.5, cma
 pc.set_clim([0, 0.05])
 x, y = ugrid_all.verts[maxi,:,:].mean(axis = 0)
 ax.plot(x, y,'wx')
-ax.set_title('%s (%s)'%(ds.mesh2d_s1.long_name, ds.mesh2d_s1.units))
+ax.set_title('%s (%s)'%(ds.s1.long_name, ds.s1.units))
 ax.set_aspect('equal')
 fig.colorbar(pc, ax=ax)
-xticks = np.linspace(np.min(ds.mesh2d_node_x.data),
-                     np.max(ds.mesh2d_node_x.data),
+xticks = np.linspace(np.min(ds.FlowElem_xzw.data),
+                     np.max(ds.FlowElem_yzw.data),
                      num = 5,
                      endpoint = True)
-yticks = np.linspace(np.min(ds.mesh2d_node_y.data),
-                     np.max(ds.mesh2d_node_y.data),
+yticks = np.linspace(np.min(ds.FlowElem_xzw.data),
+                     np.max(ds.FlowElem_yzw.data),
                      num = 5,
                      endpoint = True)
 
 ax.set_xticks(xticks)
-ax.set_xlabel('%s (%s)'%(ds.mesh2d_node_x.long_name, ds.mesh2d_node_x.units))
+ax.set_xlabel('%s (%s)'%(ds.FlowElem_xzw.long_name, ds.FlowElem_xzw.units))
 ax.set_yticks(yticks)
-ax.set_ylabel('%s (%s)'%(ds.mesh2d_node_y.long_name, ds.mesh2d_node_y.units))
+ax.set_ylabel('%s (%s)'%(ds.FlowElem_yzw.long_name, ds.FlowElem_yzw.units))
 
 
 'trying with xarray and regridding / reshaping'
