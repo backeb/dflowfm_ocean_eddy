@@ -35,7 +35,7 @@ import os
 #
 # Parameters for the grid
 #
-dx = 30e3;                  # Horizontal resolution
+dx = 30e3;                  # Horizontal resolution m-direction
 xmax = 900e3;               # Half the domain length
 H0 = 5000;                  # Depth
 H = 2500;                   # Level of no-motion
@@ -201,20 +201,28 @@ ubar=np.squeeze(hu/D_u);
 vbar=np.squeeze(hv/D_v);
 
 #%%
-# create function with relation of lat/lon/watercolumn_grid
+# create function and interpolate to dflowfm meshgrid
 #
 fpath = 'C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\DFM_OUTPUT_oceaneddy_expt00\\'
 ds = xarray.open_dataset(fpath+'oceaneddy_expt00_20010101_000000_rst.nc')
-f_amp = RegularGridInterpolator((x,y), zeta, bounds_error=False, fill_value=np.nan) 
+lon_minmax = [np.min(ds.FlowElem_xzw.data), np.max(ds.FlowElem_xzw.data)]
+lat_minmax = [np.min(ds.FlowElem_yzw.data), np.max(ds.FlowElem_yzw.data)]
+dlon = (lon_minmax[1]-lon_minmax[0])/(len(x)-1)
+dlat = (lat_minmax[1]-lat_minmax[0])/(len(x)-1)
+lon = np.arange(lon_minmax[0], lon_minmax[1], dlon)
+lat = np.arange(lat_minmax[0], lat_minmax[1], dlat)
+f_amp = RegularGridInterpolator((lon,lat), zeta, bounds_error=False, fill_value=np.nan) 
 pli_coords = np.moveaxis(np.stack([ds.FlowElem_xzw.data,ds.FlowElem_yzw.data]),0,-1)
+data = f_amp(pli_coords)[np.newaxis]
+#plt.scatter(ds.FlowElem_xzw,ds.FlowElem_yzw,data,data,cmap='jet')
 
 #
 # write to dflowfm netcdf restart file
 #
 wds = xarray.Dataset()
 wds['timestep'] = ds.timestep
-wds['s1'] = xarray.DataArray(data=f_amp(pli_coords)[np.newaxis], name=ds.s1.name, dims=ds.s1.dims, attrs=ds.s1.attrs)
-wds['s0'] = xarray.DataArray(data=f_amp(pli_coords)[np.newaxis], name=ds.s0.name, dims=ds.s0.dims, attrs=ds.s0.attrs)
+wds['s1'] = xarray.DataArray(data=data, name=ds.s1.name, dims=ds.s1.dims, attrs=ds.s1.attrs)
+wds['s0'] = xarray.DataArray(data=data, name=ds.s0.name, dims=ds.s0.dims, attrs=ds.s0.attrs)
 wds['taus'] = ds.taus # taucurrent in flow element center
 wds['czs'] = ds.czs # Chezy roughness in flow element center
 wds['FlowElem_bl'] = ds.FlowElem_bl # bed level at flow element circumcenter
@@ -244,23 +252,23 @@ wds.to_netcdf(fpath+fname, 'w', 'NETCDF4')
 #
 fig, ax = plt.subplots(figsize=(15, 10))
 #pc = plt.contourf(X, Y, zeta, vmin = 0, vmax = 1, cmap="jet")
-pc = plt.pcolormesh(X, Y, zeta, vmin = 0, vmax = 1, cmap="jet")
+pc = plt.pcolormesh(lon, lat, zeta, vmin = 0, vmax = 1, cmap="jet")
 ax.set_title('%s (%s)'%("Initial condition: sea level", "m"))
 ax.set_aspect('equal')
 fig.colorbar(pc, ax=ax)
-xticks = np.linspace(np.min(X),
-                     np.max(X),
+xticks = np.linspace(np.min(lon),
+                     np.max(lon),
                      num = 5,
                      endpoint = True)
-yticks = np.linspace(np.min(Y),
-                     np.max(Y),
+yticks = np.linspace(np.min(lat),
+                     np.max(lat),
                      num = 5,
                      endpoint = True)
 ax.set_xticks(xticks)
-ax.set_xlabel('%s (%s)'%("Distance", "m"))
+ax.set_xlabel('%s (%s)'%("Longitude", "degrees E"))
 ax.set_yticks(yticks)
-ax.set_ylabel('%s (%s)'%("Distance", "m"))
-ax = plt.quiver(X, Y, ur[-1, :, :], vr[-1, :, :], color = "w", scale = 50)
+ax.set_ylabel('%s (%s)'%("Latitude", "degrees N"))
+ax = plt.quiver(lon, lat, ur[-1, :, :], vr[-1, :, :], color = "w", scale = 50)
 
 #spd = np.sqrt(ur**2+vr**2)
 #fig, ax = plt.subplots(figsize=(15, 10))
