@@ -33,8 +33,8 @@ fig, ax = plt.subplots()#(figsize=(15, 10))
 
 pc = plot_netmapdata(ugrid_all.verts, values=ssh[0,:], ax=ax, linewidth=0.5, cmap="jet")
 #pc.set_clim([0, 0.05])
-# x, y = ugrid_all.verts[maxi,:,:].mean(axis = 0)
-# ax.plot(x, y,'wx')
+x, y = ugrid_all.verts[maxi,:,:].mean(axis = 0)
+ax.plot(x, y,'wx')
 ax.set_title('%s (%s)'%(ds.s1.long_name, ds.s1.units))
 ax.set_aspect('equal')
 fig.colorbar(pc, ax=ax)
@@ -51,17 +51,3 @@ ax.set_xticks(xticks)
 ax.set_xlabel('%s (%s)'%(ds.FlowElem_xzw.long_name, ds.FlowElem_xzw.units))
 ax.set_yticks(yticks)
 ax.set_ylabel('%s (%s)'%(ds.FlowElem_yzw.long_name, ds.FlowElem_yzw.units))
-
-
-'trying with xarray and regridding / reshaping'
-# ds = xr.open_dataset(fname)
-# ssh = ds.mesh2d_s1[0,:].data
-
-reg_x_vec = np.linspace(0,1,100)
-reg_y_vec = np.linspace(0,1,100)
-x_grid,y_grid = np.meshgrid(reg_x_vec,reg_y_vec)
-
-value_grid = griddata((np.linspace(0,1,100),np.linspace(0,1,100)),
-                      ssh,
-                      (x_grid,y_grid),
-                      method='nearest')
