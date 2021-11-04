@@ -127,7 +127,7 @@ yr = np.tile(yr, (N, 1, 1))
 #
 rho=rho0*(1-N2*zr/g);
 rhodyn=-P0*(1-np.exp(-zr-H))*np.exp(-(np.power(xr,2)+np.power(yr,2))/radius**2)/(g*(H-1+np.exp(-H)));
-## ERROR RuntimeWarning: overflow encountered in exp
+## TODO ERROR RuntimeWarning: overflow encountered in exp
 ## see https://stackoverflow.com/questions/40726490/overflow-error-in-pythons-numpy-exp-function
 ## https://stackoverflow.com/questions/9559346/deal-with-overflow-in-exp-using-numpy
 rho[zr>-H]=rho[zr>-H]+rhodyn[zr>-H];
@@ -162,7 +162,7 @@ t=(-rho+1000+R0)/TCOEF;
 # Compute geostrophic velocities Vg
 #
 F=(H-1+zr+np.exp(-zr-H))/(H-1+np.exp(-H));
-## ERROR RuntimeWarning: overflow encountered in exp
+## TODO ERROR RuntimeWarning: overflow encountered in exp
 ## see https://stackoverflow.com/questions/40726490/overflow-error-in-pythons-numpy-exp-function
 ## https://stackoverflow.com/questions/9559346/deal-with-overflow-in-exp-using-numpy
 F[zr<-H]=0;
@@ -185,25 +185,30 @@ Vgr=2*Vg/(1+np.sqrt(a));
 #
 ur=-Vgr*yr/r;
 vr=Vgr*xr/r;
-u=0.5*(ur[:,:,:-1]+ur[:,:,1:]);
-v=0.5*(vr[:,:-1,:]+vr[:,1:,:]);
+#u=0.5*(ur[:,:,:-1]+ur[:,:,1:]);
+#v=0.5*(vr[:,:-1,:]+vr[:,1:,:]);
+u=0.5*(ur[:,:,:]+ur[:,:,:]);
+v=0.5*(vr[:,:,:]+vr[:,:,:]);
+
 #
 # Barotropic speeds
 #
 dz=zw[1:,:,:]-zw[:-1,:,:];
-dzu=0.5*(dz[:,:,:-1]+dz[:,:,1:]);
-dzv=0.5*(dz[:,:-1,:]+dz[:,1:,:]);
-hu=np.squeeze(np.sum(dzu*u));
-hv=np.squeeze(np.sum(dzv*v));
-D_u=np.squeeze(np.sum(dzu));
-D_v=np.squeeze(np.sum(dzv));
+#dzu=0.5*(dz[:,:,:-1]+dz[:,:,1:]);
+#dzv=0.5*(dz[:,:-1,:]+dz[:,1:,:]);
+dzu=0.5*(dz[:,:,:]+dz[:,:,:]);
+dzv=0.5*(dz[:,:,:]+dz[:,:,:]);
+hu=np.squeeze(np.sum(dzu*u,axis=0));
+hv=np.squeeze(np.sum(dzv*v,axis=0));
+D_u=np.squeeze(np.sum(dzu,axis=0));
+D_v=np.squeeze(np.sum(dzv,axis=0));
 ubar=np.squeeze(hu/D_u);
 vbar=np.squeeze(hv/D_v);
 
 #%%
 # create function and interpolate to dflowfm meshgrid
 #
-fpath = 'C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\DFM_OUTPUT_oceaneddy_expt00\\'
+fpath = 'C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\restart_template_for_make_dflowfm_vortex\\'
 ds = xarray.open_dataset(fpath+'oceaneddy_expt00_20010101_000000_rst.nc')
 lon_minmax = [np.min(ds.FlowElem_xzw.data), np.max(ds.FlowElem_xzw.data)]
 lat_minmax = [np.min(ds.FlowElem_yzw.data), np.max(ds.FlowElem_yzw.data)]
@@ -211,24 +216,44 @@ dlon = (lon_minmax[1]-lon_minmax[0])/(len(x))
 dlat = (lat_minmax[1]-lat_minmax[0])/(len(x))
 lon = np.linspace(lon_minmax[0]-dlon/2, lon_minmax[1]+dlon/2, len(x))
 lat = np.linspace(lat_minmax[0]-dlat/2, lat_minmax[1]+dlon/2, len(y))
+#
+# interpolate zeta to dflowfm grid
+#
 f_amp = RegularGridInterpolator((lon,lat), zeta)#, bounds_error=False, fill_value=np.nan) 
 #f_amp = RegularGridInterpolator((lon,lat), zeta, bounds_error=False, fill_value=np.nan) 
 pli_coords = np.moveaxis(np.stack([ds.FlowElem_xzw.data,ds.FlowElem_yzw.data]),0,-1) # comparable to transpose...
-data = f_amp(pli_coords)[np.newaxis]
-plt.scatter(ds.FlowElem_xzw,ds.FlowElem_yzw,1,data,cmap='jet')
+s = f_amp(pli_coords)[np.newaxis]
+#plt.scatter(ds.FlowElem_xzw,ds.FlowElem_yzw,1,data,cmap='jet')
+
+#
+# interpolate barotropic velocities to dflowfm grid
+#
+f_amp = RegularGridInterpolator((lon,lat), ubar)
+pli_coords = np.moveaxis(np.stack([ds.FlowElem_xzw.data,ds.FlowElem_yzw.data]),0,-1) # comparable to transpose...
+ucx = f_amp(pli_coords)[np.newaxis]
+f_amp = RegularGridInterpolator((lon,lat), vbar)
+pli_coords = np.moveaxis(np.stack([ds.FlowElem_xzw.data,ds.FlowElem_yzw.data]),0,-1) # comparable to transpose...
+ucy = f_amp(pli_coords)[np.newaxis]
+
+#
+# interpolate unorm to dflowfm grid
+#
+#TODO calculate normal component = the velocity perpendicular to a cell face
 
 #%%
 # write to dflowfm netcdf restart file
 #
 wds = xarray.Dataset()
 wds['timestep'] = ds.timestep
-wds['s1'] = xarray.DataArray(data=data, name=ds.s1.name, dims=ds.s1.dims, attrs=ds.s1.attrs)
-wds['s0'] = xarray.DataArray(data=data, name=ds.s0.name, dims=ds.s0.dims, attrs=ds.s0.attrs)
+wds['s1'] = xarray.DataArray(data=s, name=ds.s1.name, dims=ds.s1.dims, attrs=ds.s1.attrs)
+wds['s0'] = xarray.DataArray(data=s, name=ds.s0.name, dims=ds.s0.dims, attrs=ds.s0.attrs)
 wds['taus'] = ds.taus # taucurrent in flow element center
 wds['czs'] = ds.czs # Chezy roughness in flow element center
 wds['FlowElem_bl'] = ds.FlowElem_bl # bed level at flow element circumcenter
-wds['ucx'] = ds.ucx # eastward_sea_water_velocity
-wds['ucy'] = ds.ucy # northward_sea_water_velocity
+#wds['ucx'] = ds.ucx # eastward_sea_water_velocity
+wds['ucx'] = xarray.DataArray(data=ucx, name=ds.ucx.name, dims=ds.ucx.dims, attrs=ds.ucx.attrs)
+#wds['ucy'] = ds.ucy # northward_sea_water_velocity
+wds['ucy'] = xarray.DataArray(data=ucy, name=ds.ucy.name, dims=ds.ucy.dims, attrs=ds.ucy.attrs)
 wds['unorm'] = ds.unorm # normal component of sea_water_speed
 wds['u0'] = ds.u0 # normal component of velocity through flow link at previous ti...
 wds['q1'] = ds.q1 # discharge
@@ -238,7 +263,7 @@ wds['FlowElem_xzw'] = ds.FlowElem_xzw # longitude
 wds['FlowElem_yzw'] = ds.FlowElem_yzw # latitude
 wds.attrs=ds.attrs
 
-fname = "oceaneddy_init_20010101_000000_rst.nc"
+fname = "oceaneddy_init.nc"
 try:
     os.remove(fpath+fname)
 except OSError:
