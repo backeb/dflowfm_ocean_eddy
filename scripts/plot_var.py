@@ -12,8 +12,8 @@ Created on Wed Dec  9 16:33:40 2020
 # user defined variables
 #
 expt  = 'expt00'
-varname = 'ucy'
-tstep2plot = 7
+varname = 's1'
+tstep2plot = 0
 
 #
 # import libraries

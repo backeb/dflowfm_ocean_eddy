@@ -16,7 +16,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # set filename
-fname = 'C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\DFM_OUTPUT_oceaneddy_expt00\\oceaneddy_init_20010101_000000_rst.nc'
+fname = 'C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\oceaneddy_expt00_20010101_000000_rst.nc'
 ds = xr.open_dataset(fname)
 # plt.scatter(ds.FlowElem_xzw.data,ds.FlowElem_yzw.data,1,ds.s1.data[0,:])
 

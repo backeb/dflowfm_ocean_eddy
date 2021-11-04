@@ -11,7 +11,7 @@ Purpose: plot eddy on map
 # user defined variables
 #
 expt  = 'expt00'
-var2plot = 'ucx'
+var2plot = 's1'
 
 #
 # import libraries
@@ -36,7 +36,7 @@ for i in np.arange(0, 20, 1):#len(ds.time.data), 1):
                           timestep=i)
     
     pc = plot_netmapdata(ugrid_all.verts, values=ssh[0,:], ax=axs, linewidth=0.5, cmap="jet")
-    #pc.set_clim([0, 0.25])
+    pc.set_clim([0, 0.25])
     #axs.plot(x[:i],y[:i],'r.', markersize = 2)
     #axs.set_title(np.datetime_as_string(ds.time.data[i], unit = 'h'))
     axs.set_title('t = '+str(i)+' hours')
