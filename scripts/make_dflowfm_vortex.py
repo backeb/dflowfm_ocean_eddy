@@ -205,7 +205,7 @@ D_v=np.squeeze(np.sum(dzv,axis=0));
 ubar=np.squeeze(hu/D_u);
 vbar=np.squeeze(hv/D_v);
 
-#%%
+#
 # create function and interpolate to dflowfm meshgrid
 #
 fpath = 'C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\restart_template_for_make_dflowfm_vortex\\'
@@ -216,7 +216,11 @@ dlon = (lon_minmax[1]-lon_minmax[0])/(len(x))
 dlat = (lat_minmax[1]-lat_minmax[0])/(len(x))
 lon = np.linspace(lon_minmax[0]-dlon/2, lon_minmax[1]+dlon/2, len(x))
 lat = np.linspace(lat_minmax[0]-dlat/2, lat_minmax[1]+dlon/2, len(y))
-#
+dlon = np.mean(np.diff(lon))
+dlat = np.mean(np.diff(lat))
+
+       
+#%%
 # interpolate zeta to dflowfm grid
 #
 f_amp = RegularGridInterpolator((lon,lat), zeta)#, bounds_error=False, fill_value=np.nan) 
@@ -236,10 +240,25 @@ pli_coords = np.moveaxis(np.stack([ds.FlowElem_xzw.data,ds.FlowElem_yzw.data]),0
 ucy = f_amp(pli_coords)[np.newaxis]
 
 #
-# interpolate unorm to dflowfm grid
+# TODO interpolate unorm to dflowfm grid faces
 #
-#TODO calculate normal component = the velocity perpendicular to a cell face
+unorm = np.array([])
+gds = xarray.open_dataset('C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\spheric_1800x1800km_dx10km_net.nc')
 
+# first figure out if its a vertical or horizontal edge
+# then interpolate to that location and append to unorm
+for i in np.arange(0, np.shape(gds.mesh2d_edge_nodes.data)[0], 1):
+    if i >= np.shape(gds.mesh2d_edge_nodes.data)[0]-2:
+        unorm = np.append(unorm, 4e-95)
+    elif (np.diff(gds.mesh2d_node_x.data[gds.mesh2d_edge_nodes.data[i,:]]) == 0):
+        unorm = np.append(unorm, np.interp(gds.mesh2d_edge_x.data[i], ds.FlowElem_xzw.data, np.squeeze(ucx)))
+    elif (np.diff(gds.mesh2d_node_x.data[gds.mesh2d_edge_nodes.data[i,:]]) != 0):
+        unorm = np.append(unorm, np.interp(gds.mesh2d_edge_x.data[i], ds.FlowElem_xzw.data, np.squeeze(ucy)))
+    
+
+unorm2 = np.interp(np.squeeze(ds.FlowLink_xu.data), np.squeeze(gds.mesh2d_edge_x.data), unorm)
+unorm2 = unorm2[np.newaxis]
+        
 #%%
 # write to dflowfm netcdf restart file
 #
@@ -263,7 +282,7 @@ wds['FlowElem_xzw'] = ds.FlowElem_xzw # longitude
 wds['FlowElem_yzw'] = ds.FlowElem_yzw # latitude
 wds.attrs=ds.attrs
 
-fname = "oceaneddy_init.nc"
+fname = "oceaneddy_init_rst.nc"
 try:
     os.remove(fpath+fname)
 except OSError:
