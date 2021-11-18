@@ -11,7 +11,7 @@ Purpose: plot eddy on map
 # user defined variables
 #
 expt  = 'expt00'
-var2plot = 's1'
+var2plot = 'mesh2d_ucx'
 
 #
 # import libraries
@@ -36,23 +36,23 @@ for i in np.arange(0, 20, 1):#len(ds.time.data), 1):
                           timestep=i)
     
     pc = plot_netmapdata(ugrid_all.verts, values=ssh[0,:], ax=axs, linewidth=0.5, cmap="jet")
-    pc.set_clim([0, 0.25])
+    #pc.set_clim([0, 0.25])
     #axs.plot(x[:i],y[:i],'r.', markersize = 2)
     #axs.set_title(np.datetime_as_string(ds.time.data[i], unit = 'h'))
     axs.set_title('t = '+str(i)+' hours')
     axs.set_aspect('equal')
-    xticks = np.linspace(np.min(ds.NetNode_x.data),
-                      np.max(ds.NetNode_x.data),
+    xticks = np.linspace(np.min(ds.mesh2d_face_x.data),
+                      np.max(ds.mesh2d_face_x.data),
                       num = 5,
                       endpoint = True)
     axs.set_xticks(xticks)
-    axs.set_xlabel('%s (%s)'%(ds.NetNode_x.long_name, ds.NetNode_x.units))
-    yticks = np.linspace(np.min(ds.NetNode_y.data),
-                         np.max(ds.NetNode_y.data),
+    axs.set_xlabel('%s (%s)'%(ds.mesh2d_face_x.long_name, ds.mesh2d_face_x.units))
+    yticks = np.linspace(np.min(ds.mesh2d_face_y.data),
+                         np.max(ds.mesh2d_face_y.data),
                          num = 5,
                          endpoint = True)
     axs.set_yticks(yticks)
-    axs.set_ylabel('%s (%s)'%(ds.NetNode_y.long_name, ds.NetNode_y.units))
+    axs.set_ylabel('%s (%s)'%(ds.mesh2d_face_y.long_name, ds.mesh2d_face_y.units))
     
     # p0 = axs.get_position().get_points().flatten()
     # p1 = axs[-1].get_position().get_points().flatten()
