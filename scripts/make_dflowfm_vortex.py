@@ -219,8 +219,17 @@ lat = np.linspace(lat_minmax[0]-dlat/2, lat_minmax[1]+dlon/2, len(y))
 dlon = np.mean(np.diff(lon))
 dlat = np.mean(np.diff(lat))
 
-       
-#%%
+#
+# calc unorm
+#
+lon2 = np.arange(lon[0]+dlon/2, lon[-1]+dlon, dlon/2)
+lat2 = np.arange(lat[0], lat[-1], dlat/2)
+unorm = np.zeros((len(lon2), len(lat2)))
+unorm[0::2,0::2]=vbar
+unorm[1::2,1::2]=ubar[1::,1::]
+
+      
+#
 # interpolate zeta to dflowfm grid
 #
 f_amp = RegularGridInterpolator((lon,lat), zeta)#, bounds_error=False, fill_value=np.nan) 
@@ -240,26 +249,13 @@ pli_coords = np.moveaxis(np.stack([ds.FlowElem_xzw.data,ds.FlowElem_yzw.data]),0
 ucy = f_amp(pli_coords)[np.newaxis]
 
 #
-# TODO interpolate unorm to dflowfm grid faces
+# interpolate unorm to dflowfm grid edges
 #
-unorm = np.array([])
-gds = xarray.open_dataset('C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\spheric_1800x1800km_dx10km_net.nc')
+f_amp = RegularGridInterpolator((lon2,lat2), unorm, bounds_error=False, fill_value=0)
+pli_coords = np.moveaxis(np.stack([ds.FlowLink_xu.data,ds.FlowLink_yu.data]),0,-1) # comparable to transpose...
+unorm2 = f_amp(pli_coords)[np.newaxis]
 
-# first figure out if its a vertical or horizontal edge
-# then interpolate to that location and append to unorm
-for i in np.arange(0, np.shape(gds.mesh2d_edge_nodes.data)[0], 1):
-    if i >= np.shape(gds.mesh2d_edge_nodes.data)[0]-2:
-        unorm = np.append(unorm, 4e-95)
-    elif (np.diff(gds.mesh2d_node_x.data[gds.mesh2d_edge_nodes.data[i,:]]) == 0):
-        unorm = np.append(unorm, np.interp(gds.mesh2d_edge_x.data[i], ds.FlowElem_xzw.data, np.squeeze(ucx)))
-    elif (np.diff(gds.mesh2d_node_x.data[gds.mesh2d_edge_nodes.data[i,:]]) != 0):
-        unorm = np.append(unorm, np.interp(gds.mesh2d_edge_x.data[i], ds.FlowElem_xzw.data, np.squeeze(ucy)))
-    
-
-unorm2 = np.interp(np.squeeze(ds.FlowLink_xu.data), np.squeeze(gds.mesh2d_edge_x.data), unorm)
-unorm2 = unorm2[np.newaxis]
-        
-#%%
+#
 # write to dflowfm netcdf restart file
 #
 wds = xarray.Dataset()
@@ -273,8 +269,10 @@ wds['FlowElem_bl'] = ds.FlowElem_bl # bed level at flow element circumcenter
 wds['ucx'] = xarray.DataArray(data=ucx, name=ds.ucx.name, dims=ds.ucx.dims, attrs=ds.ucx.attrs)
 #wds['ucy'] = ds.ucy # northward_sea_water_velocity
 wds['ucy'] = xarray.DataArray(data=ucy, name=ds.ucy.name, dims=ds.ucy.dims, attrs=ds.ucy.attrs)
-wds['unorm'] = ds.unorm # normal component of sea_water_speed
-wds['u0'] = ds.u0 # normal component of velocity through flow link at previous ti...
+#wds['unorm'] = ds.unorm # normal component of sea_water_speed
+wds['unorm'] = xarray.DataArray(data=unorm2, name=ds.unorm.name, dims=ds.unorm.dims, attrs=ds.unorm.attrs)
+#wds['u0'] = ds.u0 # normal component of velocity through flow link at previous ti...
+wds['u0'] = xarray.DataArray(data=unorm2, name=ds.u0.name, dims=ds.u0.dims, attrs=ds.u0.attrs)
 wds['q1'] = ds.q1 # discharge
 wds['qa'] = ds.qa # discharge used in advection
 wds['squ'] = ds.squ # cell center outcoming flux
@@ -291,47 +289,48 @@ print("writing datastack to netcdf4 :: "+fpath+fname)
 wds.to_netcdf(fpath+fname, 'w', 'NETCDF4')
 
 
-#%%
-#
-# plot vortex
-#
-fig, ax = plt.subplots(figsize=(15, 10))
-#pc = plt.contourf(X, Y, zeta, vmin = 0, vmax = 1, cmap="jet")
-pc = plt.pcolormesh(lon, lat, zeta, vmin = 0, vmax = 1, cmap="jet")
-ax.set_title('%s (%s)'%("Initial condition: sea level", "m"))
-ax.set_aspect('equal')
-fig.colorbar(pc, ax=ax)
-xticks = np.linspace(np.min(lon),
-                     np.max(lon),
-                     num = 5,
-                     endpoint = True)
-yticks = np.linspace(np.min(lat),
-                     np.max(lat),
-                     num = 5,
-                     endpoint = True)
-ax.set_xticks(xticks)
-ax.set_xlabel('%s (%s)'%("Longitude", "degrees E"))
-ax.set_yticks(yticks)
-ax.set_ylabel('%s (%s)'%("Latitude", "degrees N"))
-ax = plt.quiver(lon, lat, ur[-1, :, :], vr[-1, :, :], color = "w", scale = 50)
-
-#spd = np.sqrt(ur**2+vr**2)
+##%%
+##
+## plot vortex
+##
 #fig, ax = plt.subplots(figsize=(15, 10))
 ##pc = plt.contourf(X, Y, zeta, vmin = 0, vmax = 1, cmap="jet")
-#pc = plt.pcolormesh(X, Y, spd[-1,:,:], vmin = 0, vmax = np.max(spd), cmap="jet")
+##pc = plt.pcolormesh(lon, lat, zeta, vmin = 0, vmax = 1, cmap="jet")
+#pc = plt.pcolormesh(lon2, lat2, unorm, cmap="jet")
 #ax.set_title('%s (%s)'%("Initial condition: sea level", "m"))
 #ax.set_aspect('equal')
 #fig.colorbar(pc, ax=ax)
-#xticks = np.linspace(np.min(X),
-#                     np.max(X),
+#xticks = np.linspace(np.min(lon),
+#                     np.max(lon),
 #                     num = 5,
 #                     endpoint = True)
-#yticks = np.linspace(np.min(Y),
-#                     np.max(Y),
+#yticks = np.linspace(np.min(lat),
+#                     np.max(lat),
 #                     num = 5,
 #                     endpoint = True)
 #ax.set_xticks(xticks)
-#ax.set_xlabel('%s (%s)'%("Distance", "m"))
+#ax.set_xlabel('%s (%s)'%("Longitude", "degrees E"))
 #ax.set_yticks(yticks)
-#ax.set_ylabel('%s (%s)'%("Distance", "m"))
-
+#ax.set_ylabel('%s (%s)'%("Latitude", "degrees N"))
+##ax = plt.quiver(lon, lat, ur[-1, :, :], vr[-1, :, :], color = "w", scale = 50)
+#
+##spd = np.sqrt(ur**2+vr**2)
+##fig, ax = plt.subplots(figsize=(15, 10))
+###pc = plt.contourf(X, Y, zeta, vmin = 0, vmax = 1, cmap="jet")
+##pc = plt.pcolormesh(X, Y, spd[-1,:,:], vmin = 0, vmax = np.max(spd), cmap="jet")
+##ax.set_title('%s (%s)'%("Initial condition: sea level", "m"))
+##ax.set_aspect('equal')
+##fig.colorbar(pc, ax=ax)
+##xticks = np.linspace(np.min(X),
+##                     np.max(X),
+##                     num = 5,
+##                     endpoint = True)
+##yticks = np.linspace(np.min(Y),
+##                     np.max(Y),
+##                     num = 5,
+##                     endpoint = True)
+##ax.set_xticks(xticks)
+##ax.set_xlabel('%s (%s)'%("Distance", "m"))
+##ax.set_yticks(yticks)
+##ax.set_ylabel('%s (%s)'%("Distance", "m"))
+#
