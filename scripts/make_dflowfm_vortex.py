@@ -219,17 +219,8 @@ lat = np.linspace(lat_minmax[0]-dlat/2, lat_minmax[1]+dlon/2, len(y))
 dlon = np.mean(np.diff(lon))
 dlat = np.mean(np.diff(lat))
 
-#
-# calc unorm
-#
-lon2 = np.arange(lon[0]+dlon/2, lon[-1]+dlon, dlon/2)
-lat2 = np.arange(lat[0], lat[-1], dlat/2)
-unorm = np.zeros((len(lon2), len(lat2)))
-unorm[0::2,0::2]=vbar
-unorm[1::2,1::2]=ubar[1::,1::]
 
-      
-#
+#%%
 # interpolate zeta to dflowfm grid
 #
 f_amp = RegularGridInterpolator((lon,lat), zeta)#, bounds_error=False, fill_value=np.nan) 
@@ -248,14 +239,31 @@ f_amp = RegularGridInterpolator((lon,lat), vbar)
 pli_coords = np.moveaxis(np.stack([ds.FlowElem_xzw.data,ds.FlowElem_yzw.data]),0,-1) # comparable to transpose...
 ucy = f_amp(pli_coords)[np.newaxis]
 
-#
-# interpolate unorm to dflowfm grid edges
-#
-f_amp = RegularGridInterpolator((lon2,lat2), unorm, bounds_error=False, fill_value=0)
-pli_coords = np.moveaxis(np.stack([ds.FlowLink_xu.data,ds.FlowLink_yu.data]),0,-1) # comparable to transpose...
-unorm2 = f_amp(pli_coords)[np.newaxis]
+#%%
+# interpolate unorm to dflowfm grid
+# TODO add check re direction of faces
 
-#
+unorm = np.array([])
+gds = xarray.open_dataset(fpath+'oceaneddy_expt00_map.nc')
+
+# first figure out if its a vertical or horizontal edge
+# then interpolate to that location and append to unorm
+for i in np.arange(0, np.shape(gds.mesh2d_edge_faces.data)[0], 1):
+    if i >= np.shape(gds.mesh2d_edge_faces.data)[0]-2:
+        unorm = np.append(unorm, 4e-95)
+    elif (np.diff(gds.mesh2d_node_x.data[gds.mesh2d_edge_faces.data[i,:].astype(int)-1]) == 0):
+        unorm = np.append(unorm, np.interp(gds.mesh2d_edge_x.data[i], ds.FlowElem_xzw.data, np.squeeze(ucx)))
+    elif (np.diff(gds.mesh2d_node_x.data[gds.mesh2d_edge_faces.data[i,:].astype(int)-1]) != 0):
+        unorm = np.append(unorm, np.interp(gds.mesh2d_edge_x.data[i], ds.FlowElem_xzw.data, np.squeeze(ucy)))
+    
+
+unorm2 = np.interp(np.squeeze(ds.FlowLink_xu.data), np.squeeze(gds.mesh2d_edge_x.data), unorm)
+unorm2 = unorm2[np.newaxis]
+#plt.scatter(ds.FlowLink_xu, ds.FlowLink_yu, 1, unorm2)
+
+      
+
+#%%
 # write to dflowfm netcdf restart file
 #
 wds = xarray.Dataset()
