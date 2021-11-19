@@ -220,7 +220,7 @@ dlon = np.mean(np.diff(lon))
 dlat = np.mean(np.diff(lat))
 
 
-#%%
+#
 # interpolate zeta to dflowfm grid
 #
 f_amp = RegularGridInterpolator((lon,lat), zeta)#, bounds_error=False, fill_value=np.nan) 
@@ -246,22 +246,63 @@ ucy = f_amp(pli_coords)[np.newaxis]
 unorm = np.array([])
 gds = xarray.open_dataset(fpath+'oceaneddy_expt00_map.nc')
 
+# using nearest neighbour search
+from sklearn.neighbors import BallTree
+# Setup Balltree using df as reference dataset
+# Use Haversine calculate distance between points on the earth from lat/long
+# haversine - https://pypi.org/project/haversine/ 
+# these are the lon lat points where we HAVE ucx and ucy
+tree = BallTree(np.deg2rad(np.swapaxes([ds.FlowElem_xzw.data, ds.FlowElem_yzw.data],0,1)), metric='haversine')
+
 # first figure out if its a vertical or horizontal edge
 # then interpolate to that location and append to unorm
 for i in np.arange(0, np.shape(gds.mesh2d_edge_faces.data)[0], 1):
-    if i >= np.shape(gds.mesh2d_edge_faces.data)[0]-2:
-        unorm = np.append(unorm, 4e-95)
-    elif (np.diff(gds.mesh2d_node_x.data[gds.mesh2d_edge_faces.data[i,:].astype(int)-1]) == 0):
-        unorm = np.append(unorm, np.interp(gds.mesh2d_edge_x.data[i], ds.FlowElem_xzw.data, np.squeeze(ucx)))
-    elif (np.diff(gds.mesh2d_node_x.data[gds.mesh2d_edge_faces.data[i,:].astype(int)-1]) != 0):
-        unorm = np.append(unorm, np.interp(gds.mesh2d_edge_x.data[i], ds.FlowElem_xzw.data, np.squeeze(ucy)))
-    
+    if (np.diff(gds.mesh2d_face_x.data[gds.mesh2d_edge_faces.data[i,:].astype(int)-1]) == 0):
+        # we want to find ds.FlowElem_xzw and ds.FlowElem_yzw that are closest to gds.mesh2d_edge_x.data[i] and gds.mesh2d_edge_y.data[i]
+        # use k = 3 for 3 closest neighbors
+        distances, indices = tree.query(np.deg2rad(np.c_[gds.mesh2d_edge_x.data[i], gds.mesh2d_edge_y.data[i]]), k = 3)
+        unorm = np.append(unorm, ucx[0,indices[np.where(distances == distances.min())]])
+        #unorm = np.append(unorm, np.interp(gds.mesh2d_edge_x.data[i], ds.FlowElem_xzw.data, np.squeeze(ucx)))
+        #unorm = np.append(unorm, ucx[0,i])
+    elif (np.diff(gds.mesh2d_face_x.data[gds.mesh2d_edge_faces.data[i,:].astype(int)-1]) != 0):
+        distances, indices = tree.query(np.deg2rad(np.c_[gds.mesh2d_edge_x.data[i], gds.mesh2d_edge_y.data[i]]), k = 3)
+        unorm = np.append(unorm, ucy[0,indices[np.where(distances == distances.min())]])
+        #unorm = np.append(unorm, np.interp(gds.mesh2d_edge_x.data[i], ds.FlowElem_xzw.data, np.squeeze(ucy)))
+        #unorm = np.append(unorm, ucy[0,i])
 
-unorm2 = np.interp(np.squeeze(ds.FlowLink_xu.data), np.squeeze(gds.mesh2d_edge_x.data), unorm)
-unorm2 = unorm2[np.newaxis]
+#plt.scatter(gds.mesh2d_edge_x, gds.mesh2d_edge_y, 1, unorm)    
+
+#f_amp = RegularGridInterpolator((gds.mesh2d_edge_x.data,gds.mesh2d_edge_y.data), unorm)
+#pli_coords = np.moveaxis(np.stack([ds.FlowLink_xu.data,ds.FlowLink_yu.data]),0,-1)
+#unorm2 = f_amp(pli_coords)[np.newaxis]
 #plt.scatter(ds.FlowLink_xu, ds.FlowLink_yu, 1, unorm2)
 
-      
+#%% some tests and checks
+gds.mesh2d_node_x.data[gds.mesh2d_edge_faces.data[:100,:].astype(int)-1] 
+# the above returns the nodes of two edge faces at i
+np.diff(gds.mesh2d_node_x.data[gds.mesh2d_edge_faces.data[:100,:].astype(int)-1])
+# the above returns the difference between the nodes of the two edge faces at i
+# when =0 we have a vertical edge, therefore should specify ucx
+# when !=0 we have a horizontal edge, 
+# BUT there are negative and positive differences 
+# AND there are differences > abs(0.1)
+gds.mesh2d_face_x.data[gds.mesh2d_edge_faces.data[:100,:].astype(int)-1]
+np.diff(gds.mesh2d_face_x.data[gds.mesh2d_edge_faces.data[:100,:].astype(int)-1])
+# the above gets rid of differences > abs(0.1)
+# AND Arthur said to use faces instead of nodes
+
+#%% try nearest neighbour search
+from sklearn.neighbors import BallTree
+# Setup Balltree using df as reference dataset
+# Use Haversine calculate distance between points on the earth from lat/long
+# haversine - https://pypi.org/project/haversine/ 
+# these are the lon lat points where we HAVE ucx and ucy
+tree = BallTree(np.deg2rad(np.swapaxes([ds.FlowElem_xzw.data, ds.FlowElem_yzw.data],0,1)), metric='haversine')
+# we want to find ds.FlowElem_xzw and ds.FlowElem_yzw 
+# that are closest to gds.mesh2d_edge_x.data[i] and gds.mesh2d_edge_y.data[i]
+# use k = 3 for 3 closest neighbors
+distances, indices = tree.query(np.deg2rad(np.c_[gds.mesh2d_edge_x.data[i], gds.mesh2d_edge_y.data[i]]), k = 3)
+
 
 #%%
 # write to dflowfm netcdf restart file
