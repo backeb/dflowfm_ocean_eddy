@@ -11,7 +11,8 @@ Purpose: plot eddy on map
 # user defined variables
 #
 expt  = 'expt00'
-var2plot = 'mesh2d_ucx'
+var2plot = 'mesh2d_s1'
+cmaplims = [0, 0.05]
 
 #
 # import libraries
@@ -27,7 +28,7 @@ fname = 'C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-
 ugrid_all = get_netdata(file_nc=fname)
 ds = xr.open_dataset(fname)
 
-for i in np.arange(0, 20, 1):#len(ds.time.data), 1):
+for i in np.arange(0, len(ds.time.data), 1):
     
     fig, axs = plt.subplots(1, 1, figsize=(5, 5))
     
@@ -36,10 +37,10 @@ for i in np.arange(0, 20, 1):#len(ds.time.data), 1):
                           timestep=i)
     
     pc = plot_netmapdata(ugrid_all.verts, values=ssh[0,:], ax=axs, linewidth=0.5, cmap="jet")
-    #pc.set_clim([0, 0.25])
+    pc.set_clim(cmaplims)
     #axs.plot(x[:i],y[:i],'r.', markersize = 2)
-    #axs.set_title(np.datetime_as_string(ds.time.data[i], unit = 'h'))
-    axs.set_title('t = '+str(i)+' hours')
+    axs.set_title(np.datetime_as_string(ds.time.data[i], unit = 'h'))
+    #axs.set_title('t = '+str(i)+' hours')
     axs.set_aspect('equal')
     xticks = np.linspace(np.min(ds.mesh2d_face_x.data),
                       np.max(ds.mesh2d_face_x.data),
