@@ -223,101 +223,72 @@ dlat = np.mean(np.diff(lat))
 #
 # interpolate zeta to dflowfm grid
 #
-f_amp = RegularGridInterpolator((lon,lat), zeta)#, bounds_error=False, fill_value=np.nan) 
+f_amp = RegularGridInterpolator((lat,lon), zeta, bounds_error=False, fill_value=np.nan) 
 #f_amp = RegularGridInterpolator((lon,lat), zeta, bounds_error=False, fill_value=np.nan) 
-pli_coords = np.moveaxis(np.stack([ds.FlowElem_xzw.data,ds.FlowElem_yzw.data]),0,-1) # comparable to transpose...
+pli_coords = np.moveaxis(np.stack([ds.FlowElem_yzw.data,ds.FlowElem_xzw.data]),0,-1) # comparable to transpose...
 s = f_amp(pli_coords)[np.newaxis]
 #plt.scatter(ds.FlowElem_xzw,ds.FlowElem_yzw,1,data,cmap='jet')
 
 #
 # interpolate barotropic velocities to dflowfm grid
 #
-f_amp = RegularGridInterpolator((lon,lat), ubar)
-pli_coords = np.moveaxis(np.stack([ds.FlowElem_xzw.data,ds.FlowElem_yzw.data]),0,-1) # comparable to transpose...
+f_amp = RegularGridInterpolator((lat,lon), ubar, bounds_error=False, fill_value=np.nan)
+pli_coords = np.moveaxis(np.stack([ds.FlowElem_yzw.data,ds.FlowElem_xzw.data]),0,-1) # comparable to transpose...
 ucx = f_amp(pli_coords)[np.newaxis]
-f_amp = RegularGridInterpolator((lon,lat), vbar)
-pli_coords = np.moveaxis(np.stack([ds.FlowElem_xzw.data,ds.FlowElem_yzw.data]),0,-1) # comparable to transpose...
+f_amp = RegularGridInterpolator((lat,lon), vbar)
+pli_coords = np.moveaxis(np.stack([ds.FlowElem_yzw.data,ds.FlowElem_xzw.data]),0,-1) # comparable to transpose...
 ucy = f_amp(pli_coords)[np.newaxis]
 
-#%%
+#
 # interpolate unorm to dflowfm grid
-# TODO add check re direction of faces
+# 
 
 unorm = np.array([])
 gds = xarray.open_dataset(fpath+'oceaneddy_expt00_map.nc')
 
 # using nearest neighbour search
 from sklearn.neighbors import BallTree
-# Setup Balltree using df as reference dataset
+# Setup Balltree using ds.FlowElem_xzw,_yzw as reference dataset
 # Use Haversine calculate distance between points on the earth from lat/long
 # haversine - https://pypi.org/project/haversine/ 
-# these are the lon lat points where we HAVE ucx and ucy
+# ds.FlowElem_xzw,_yzw are the lon lat points where we HAVE ucx and ucy
 tree = BallTree(np.deg2rad(np.swapaxes([ds.FlowElem_xzw.data, ds.FlowElem_yzw.data],0,1)), metric='haversine')
 
 # first figure out if its a vertical or horizontal edge
 # then interpolate to that location and append to unorm
 for i in np.arange(0, np.shape(gds.mesh2d_edge_faces.data)[0], 1):
-    if (np.diff(gds.mesh2d_face_x.data[gds.mesh2d_edge_faces.data[i,:].astype(int)-1]) == 0):
+    if (np.diff(gds.mesh2d_face_x.data[gds.mesh2d_edge_faces.data[i,:].astype(int)-1]) == 0): # check y-coords to see if the first one is bigger/smaller then adjust velocities
         # we want to find ds.FlowElem_xzw and ds.FlowElem_yzw that are closest to gds.mesh2d_edge_x.data[i] and gds.mesh2d_edge_y.data[i]
         # use k = 3 for 3 closest neighbors
         distances, indices = tree.query(np.deg2rad(np.c_[gds.mesh2d_edge_x.data[i], gds.mesh2d_edge_y.data[i]]), k = 3)
-        unorm = np.append(unorm, ucx[0,indices[np.where(distances == distances.min())]])
-        #unorm = np.append(unorm, np.interp(gds.mesh2d_edge_x.data[i], ds.FlowElem_xzw.data, np.squeeze(ucx)))
-        #unorm = np.append(unorm, ucx[0,i])
+        #unorm = np.append(unorm, ucx[0,indices[np.where(distances == distances.min())]])
+        unorm = np.append(unorm, np.mean(ucy[0,indices[0,:2]])) # take mean value of closest two points
     elif (np.diff(gds.mesh2d_face_x.data[gds.mesh2d_edge_faces.data[i,:].astype(int)-1]) != 0):
         distances, indices = tree.query(np.deg2rad(np.c_[gds.mesh2d_edge_x.data[i], gds.mesh2d_edge_y.data[i]]), k = 3)
-        unorm = np.append(unorm, ucy[0,indices[np.where(distances == distances.min())]])
-        #unorm = np.append(unorm, np.interp(gds.mesh2d_edge_x.data[i], ds.FlowElem_xzw.data, np.squeeze(ucy)))
-        #unorm = np.append(unorm, ucy[0,i])
-
+        #unorm = np.append(unorm, ucy[0,indices[np.where(distances == distances.min())]])
+        unorm = np.append(unorm, np.mean(ucx[0,indices[0,:2]])) # take mean value of closest two points    
 #plt.scatter(gds.mesh2d_edge_x, gds.mesh2d_edge_y, 1, unorm)    
 
-#f_amp = RegularGridInterpolator((gds.mesh2d_edge_x.data,gds.mesh2d_edge_y.data), unorm)
-#pli_coords = np.moveaxis(np.stack([ds.FlowLink_xu.data,ds.FlowLink_yu.data]),0,-1)
-#unorm2 = f_amp(pli_coords)[np.newaxis]
+unorm2 = np.resize(unorm, np.shape(ds.FlowLink_xu))
+unorm2 = unorm2[np.newaxis]
 #plt.scatter(ds.FlowLink_xu, ds.FlowLink_yu, 1, unorm2)
 
-#%% some tests and checks
-gds.mesh2d_node_x.data[gds.mesh2d_edge_faces.data[:100,:].astype(int)-1] 
-# the above returns the nodes of two edge faces at i
-np.diff(gds.mesh2d_node_x.data[gds.mesh2d_edge_faces.data[:100,:].astype(int)-1])
-# the above returns the difference between the nodes of the two edge faces at i
-# when =0 we have a vertical edge, therefore should specify ucx
-# when !=0 we have a horizontal edge, 
-# BUT there are negative and positive differences 
-# AND there are differences > abs(0.1)
-gds.mesh2d_face_x.data[gds.mesh2d_edge_faces.data[:100,:].astype(int)-1]
-np.diff(gds.mesh2d_face_x.data[gds.mesh2d_edge_faces.data[:100,:].astype(int)-1])
-# the above gets rid of differences > abs(0.1)
-# AND Arthur said to use faces instead of nodes
-
-#%% try nearest neighbour search
-from sklearn.neighbors import BallTree
-# Setup Balltree using df as reference dataset
-# Use Haversine calculate distance between points on the earth from lat/long
-# haversine - https://pypi.org/project/haversine/ 
-# these are the lon lat points where we HAVE ucx and ucy
-tree = BallTree(np.deg2rad(np.swapaxes([ds.FlowElem_xzw.data, ds.FlowElem_yzw.data],0,1)), metric='haversine')
-# we want to find ds.FlowElem_xzw and ds.FlowElem_yzw 
-# that are closest to gds.mesh2d_edge_x.data[i] and gds.mesh2d_edge_y.data[i]
-# use k = 3 for 3 closest neighbors
-distances, indices = tree.query(np.deg2rad(np.c_[gds.mesh2d_edge_x.data[i], gds.mesh2d_edge_y.data[i]]), k = 3)
-
-
-#%%
+#
 # write to dflowfm netcdf restart file
 #
 wds = xarray.Dataset()
 wds['timestep'] = ds.timestep
 wds['s1'] = xarray.DataArray(data=s, name=ds.s1.name, dims=ds.s1.dims, attrs=ds.s1.attrs)
+#wds['s1'] = ds.s1
 wds['s0'] = xarray.DataArray(data=s, name=ds.s0.name, dims=ds.s0.dims, attrs=ds.s0.attrs)
+#wds['s0'] = ds.s0
 wds['taus'] = ds.taus # taucurrent in flow element center
 wds['czs'] = ds.czs # Chezy roughness in flow element center
 wds['FlowElem_bl'] = ds.FlowElem_bl # bed level at flow element circumcenter
-#wds['ucx'] = ds.ucx # eastward_sea_water_velocity
-wds['ucx'] = xarray.DataArray(data=ucx, name=ds.ucx.name, dims=ds.ucx.dims, attrs=ds.ucx.attrs)
-#wds['ucy'] = ds.ucy # northward_sea_water_velocity
-wds['ucy'] = xarray.DataArray(data=ucy, name=ds.ucy.name, dims=ds.ucy.dims, attrs=ds.ucy.attrs)
+wds['ucx'] = ds.ucx # eastward_sea_water_velocity
+#wds['ucx'] = xarray.DataArray(data=ucx, name=ds.ucx.name, dims=ds.ucx.dims, attrs=ds.ucx.attrs)
+wds['ucy'] = ds.ucy # northward_sea_water_velocity
+#wds['ucy'] = xarray.DataArray(data=ucy, name=ds.ucy.name, dims=ds.ucy.dims, attrs=ds.ucy.attrs)
 #wds['unorm'] = ds.unorm # normal component of sea_water_speed
 wds['unorm'] = xarray.DataArray(data=unorm2, name=ds.unorm.name, dims=ds.unorm.dims, attrs=ds.unorm.attrs)
 #wds['u0'] = ds.u0 # normal component of velocity through flow link at previous ti...
@@ -343,10 +314,9 @@ wds.to_netcdf(fpath+fname, 'w', 'NETCDF4')
 ## plot vortex
 ##
 #fig, ax = plt.subplots(figsize=(15, 10))
-##pc = plt.contourf(X, Y, zeta, vmin = 0, vmax = 1, cmap="jet")
-##pc = plt.pcolormesh(lon, lat, zeta, vmin = 0, vmax = 1, cmap="jet")
-#pc = plt.pcolormesh(lon2, lat2, unorm, cmap="jet")
-#ax.set_title('%s (%s)'%("Initial condition: sea level", "m"))
+#pc = plt.contourf(lon, lat, zeta, vmin = 0, vmax = 1, cmap="jet")
+##c = plt.contourf(lon, lat, ubar, vmin = -0.4, vmax = 0.4, cmap="jet")
+#ax.set_title('%s (%s)'%("Initial condition: zeta", "m"))
 #ax.set_aspect('equal')
 #fig.colorbar(pc, ax=ax)
 #xticks = np.linspace(np.min(lon),
@@ -361,25 +331,6 @@ wds.to_netcdf(fpath+fname, 'w', 'NETCDF4')
 #ax.set_xlabel('%s (%s)'%("Longitude", "degrees E"))
 #ax.set_yticks(yticks)
 #ax.set_ylabel('%s (%s)'%("Latitude", "degrees N"))
-##ax = plt.quiver(lon, lat, ur[-1, :, :], vr[-1, :, :], color = "w", scale = 50)
+#ax = plt.quiver(lon, lat, u[-1, :, :], v[-1, :, :], color = "w", scale = 50)
 #
-##spd = np.sqrt(ur**2+vr**2)
-##fig, ax = plt.subplots(figsize=(15, 10))
-###pc = plt.contourf(X, Y, zeta, vmin = 0, vmax = 1, cmap="jet")
-##pc = plt.pcolormesh(X, Y, spd[-1,:,:], vmin = 0, vmax = np.max(spd), cmap="jet")
-##ax.set_title('%s (%s)'%("Initial condition: sea level", "m"))
-##ax.set_aspect('equal')
-##fig.colorbar(pc, ax=ax)
-##xticks = np.linspace(np.min(X),
-##                     np.max(X),
-##                     num = 5,
-##                     endpoint = True)
-##yticks = np.linspace(np.min(Y),
-##                     np.max(Y),
-##                     num = 5,
-##                     endpoint = True)
-##ax.set_xticks(xticks)
-##ax.set_xlabel('%s (%s)'%("Distance", "m"))
-##ax.set_yticks(yticks)
-##ax.set_ylabel('%s (%s)'%("Distance", "m"))
-#
+
