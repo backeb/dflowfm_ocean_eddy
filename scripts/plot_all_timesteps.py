@@ -12,7 +12,7 @@ Purpose: plot eddy on map
 #
 expt  = 'expt00'
 var2plot = 'mesh2d_s1'
-cmaplims = [0, 0.05]
+cmaplims = [0, 0.25]
 
 #
 # import libraries
