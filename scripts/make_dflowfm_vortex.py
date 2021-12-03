@@ -278,10 +278,10 @@ unorm2 = unorm2[np.newaxis]
 #
 wds = xarray.Dataset()
 wds['timestep'] = ds.timestep
-wds['s1'] = xarray.DataArray(data=s, name=ds.s1.name, dims=ds.s1.dims, attrs=ds.s1.attrs)
-#wds['s1'] = ds.s1
-wds['s0'] = xarray.DataArray(data=s, name=ds.s0.name, dims=ds.s0.dims, attrs=ds.s0.attrs)
-#wds['s0'] = ds.s0
+#wds['s1'] = xarray.DataArray(data=s, name=ds.s1.name, dims=ds.s1.dims, attrs=ds.s1.attrs)
+wds['s1'] = ds.s1
+#wds['s0'] = xarray.DataArray(data=s, name=ds.s0.name, dims=ds.s0.dims, attrs=ds.s0.attrs)
+wds['s0'] = ds.s0
 wds['taus'] = ds.taus # taucurrent in flow element center
 wds['czs'] = ds.czs # Chezy roughness in flow element center
 wds['FlowElem_bl'] = ds.FlowElem_bl # bed level at flow element circumcenter
