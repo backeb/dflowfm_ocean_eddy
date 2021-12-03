@@ -1,0 +1,345 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Oct 12 10:40:12 2021
+
+create the initial condition for the dflowfm ocean eddy validation case
+based on make_vortex.m and barocvortex.m provided by P. Penven
+
+dependencies:
+    numpy
+    progressbar
+    croco_vgrid, zlevs (provided by P. Penven)
+    tpx_tools (provided by P. Penven)
+    interp_Cgrid (provided by P. Penven)
+    xarray
+    scipy.interpolate
+    os
+
+Ref:    Penven, P., L. Debreu, P. Marchesiello et J.C. McWilliams,   
+        Application of the ROMS embedding procedure for the Central
+        California Upwelling System,  Ocean Modelling, 2006.
+
+@author: backeb
+"""
+#%%
+# 
+# import libraries
+#
+import numpy as np
+from croco_vgrid import zlevs
+import matplotlib.pyplot as plt
+import xarray
+from scipy.interpolate import RegularGridInterpolator#, griddata
+import os
+
+#
+# Parameters for the grid
+#
+dx = 30e3;                  # Horizontal resolution m-direction
+xmax = 900e3;               # Half the domain length
+H0 = 5000;                  # Depth
+H = 2500;                   # Level of no-motion
+theta = 38.5;               # Latitude (beta-plane)
+R = 6367442.76;             # Earth radius
+Pa = 1013e2;                # Atmospheric pressure
+rho0 = 1024.4;              # Mean ocean density
+umax = 1;                   # Max velocity (<0 cyclonic in the northern hemisphere)
+radius=np.sqrt(2)*60e3;     # Vortex radius (np.exp(r2/radius2))
+g=9.81;                     # Gravity acceleration
+N2=(0.003)**2;              # Brunt-Vaissala frequency
+
+#
+# Vertical grid parameters
+#
+N=10;
+theta_s=1;
+theta_b=0;
+hc=H0;
+vtransform =  1.; # s-coordinate type (1: old- ; 2: new- coordinates)
+
+#
+################### END USERS DEFINED VARIABLES #######################
+#
+
+#
+# Horzontal Grid
+#
+x = np.arange(-xmax-dx/2, xmax+dx, dx)
+y=x;
+dy=dx;
+[X,Y]=np.meshgrid(x,y);
+
+#
+# Topo
+#
+h0=H0+0*X;
+
+#
+# Coriolis term (beta plane)
+#
+deg2rad=np.pi/180;
+omega=2*np.pi/(24*3600);
+f0=2*omega*np.sin(deg2rad*theta);
+beta=2*omega/R*np.cos(deg2rad*theta);
+f=f0+beta*Y;
+
+#
+# Compute zeta,ubar,vbar,u,v,t for the vortex
+#
+
+#
+# P1 : pressure at z=0
+# P1=P0*np.exp(-r2/radius2)
+# P0 such as u(r0)=umax
+# => P0=rho0 f0 umax radius sqrt(e/2)
+#
+P0=rho0*f0*umax*radius*np.sqrt(np.exp(1)/2);
+P1=Pa+P0*np.exp(-(np.power(X,2)+np.power(Y,2))/radius**2);
+
+#
+# Calculate rho at z=0
+#
+a=-P0*(1-np.exp(-H))/(g*(H-1+np.exp(-H)));
+rho1=rho0+a*np.exp(-(np.power(X,2)+np.power(Y,2))/radius**2);
+
+#
+# Surface elevation 
+#
+zeta=(P1-Pa)/(g*rho1);
+
+#
+# Vertical grid 
+#
+zw=zlevs(h0,zeta,theta_s,theta_b,hc,N,'w',vtransform);
+zr=zlevs(h0,zeta,theta_s,theta_b,hc,N,'r',vtransform);
+
+#
+# Density
+#
+#
+M, L = np.shape(X)
+xr = np.reshape(X, (1, M, L))
+xr = np.tile(xr, (N, 1, 1))
+M, L = np.shape(Y)
+yr = np.reshape(Y, (1, M, L))
+yr = np.tile(yr, (N, 1, 1))
+
+#
+rho=rho0*(1-N2*zr/g);
+rhodyn=-P0*(1-np.exp(-zr-H))*np.exp(-(np.power(xr,2)+np.power(yr,2))/radius**2)/(g*(H-1+np.exp(-H)));
+## TODO ERROR RuntimeWarning: overflow encountered in exp
+## see https://stackoverflow.com/questions/40726490/overflow-error-in-pythons-numpy-exp-function
+## https://stackoverflow.com/questions/9559346/deal-with-overflow-in-exp-using-numpy
+rho[zr>-H]=rho[zr>-H]+rhodyn[zr>-H];
+
+#
+# Temperature
+#
+# rho=rho0+R0-TCOEF*T
+#
+R0=30;
+TCOEF=0.28;
+t=(-rho+1000+R0)/TCOEF;
+
+#
+# U and V
+#
+#a=2*P0/(f0*rho0*radius^2);
+#zu=0.5*(zr(:,:,1:end-1)+zr(:,:,2:end));
+#xu=0.5*(xr(:,:,1:end-1)+xr(:,:,2:end));
+#yu=0.5*(yr(:,:,1:end-1)+yr(:,:,2:end));
+#F=(H-1+zu+np.exp(-zu-H))./(H-1+np.exp(-H));
+#F(zu<-H)=0;
+#u=a.*F.*yu.*np.exp(-(xu.^2+yu.^2)/radius^2);
+#zv=0.5*(zr(:,1:end-1,:)+zr(:,2:end,:));
+#xv=0.5*(xr(:,1:end-1,:)+xr(:,2:end,:));
+#yv=0.5*(yr(:,1:end-1,:)+yr(:,2:end,:));
+#F=(H-1+zv+np.exp(-zv-H))./(H-1+np.exp(-H));
+#F(zv<-H)=0;
+#v=-a.*F.*xv.*np.exp(-(xv.^2+yv.^2)/radius^2);
+
+#
+# Compute geostrophic velocities Vg
+#
+F=(H-1+zr+np.exp(-zr-H))/(H-1+np.exp(-H));
+## TODO ERROR RuntimeWarning: overflow encountered in exp
+## see https://stackoverflow.com/questions/40726490/overflow-error-in-pythons-numpy-exp-function
+## https://stackoverflow.com/questions/9559346/deal-with-overflow-in-exp-using-numpy
+F[zr<-H]=0;
+r=np.sqrt(np.power(xr,2)+np.power(yr,2));
+Vg=-(2*r*P0*F/(rho0*f0*radius*radius))*np.exp(-np.power(r,2)/radius**2);
+
+#
+# Compute gradient wind velocities Vgr : Vgr/R^2 + f Vgr = f Vg 
+#
+a=1+4*Vg/(f0*r);
+indx=np.where(a<0);
+if len(indx)>0:
+    print(str(len(indx))+' points with no gradient wind solution (use geostrophy) ')
+a[a<0]=1;
+Vgr=2*Vg/(1+np.sqrt(a));
+#Vgr=Vg;
+
+#
+# Project on the grid
+#
+ur=-Vgr*yr/r;
+vr=Vgr*xr/r;
+#u=0.5*(ur[:,:,:-1]+ur[:,:,1:]);
+#v=0.5*(vr[:,:-1,:]+vr[:,1:,:]);
+u=0.5*(ur[:,:,:]+ur[:,:,:]);
+v=0.5*(vr[:,:,:]+vr[:,:,:]);
+
+#
+# Barotropic speeds
+#
+dz=zw[1:,:,:]-zw[:-1,:,:];
+#dzu=0.5*(dz[:,:,:-1]+dz[:,:,1:]);
+#dzv=0.5*(dz[:,:-1,:]+dz[:,1:,:]);
+dzu=0.5*(dz[:,:,:]+dz[:,:,:]);
+dzv=0.5*(dz[:,:,:]+dz[:,:,:]);
+hu=np.squeeze(np.sum(dzu*u,axis=0));
+hv=np.squeeze(np.sum(dzv*v,axis=0));
+D_u=np.squeeze(np.sum(dzu,axis=0));
+D_v=np.squeeze(np.sum(dzv,axis=0));
+ubar=np.squeeze(hu/D_u);
+vbar=np.squeeze(hv/D_v);
+
+#
+# create function and interpolate to dflowfm meshgrid
+#
+fpath = 'C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\restart_template_for_make_dflowfm_vortex\\'
+ds = xarray.open_dataset(fpath+'oceaneddy_expt00_map.nc')
+lon_minmax = [np.min(ds.mesh2d_face_x.data), np.max(ds.mesh2d_face_x.data)]
+lat_minmax = [np.min(ds.mesh2d_face_y.data), np.max(ds.mesh2d_face_y.data)]
+dlon = (lon_minmax[1]-lon_minmax[0])/(len(x))
+dlat = (lat_minmax[1]-lat_minmax[0])/(len(x))
+lon = np.linspace(lon_minmax[0]-dlon/2, lon_minmax[1]+dlon/2, len(x))
+lat = np.linspace(lat_minmax[0]-dlat/2, lat_minmax[1]+dlon/2, len(y))
+dlon = np.mean(np.diff(lon))
+dlat = np.mean(np.diff(lat))
+
+
+#
+# interpolate zeta to dflowfm grid
+#
+f_amp = RegularGridInterpolator((lat,lon), zeta, bounds_error=False, fill_value=np.nan) 
+#f_amp = RegularGridInterpolator((lon,lat), zeta, bounds_error=False, fill_value=np.nan) 
+pli_coords = np.moveaxis(np.stack([ds.mesh2d_face_y.data,ds.mesh2d_face_x.data]),0,-1) # comparable to transpose...
+s = f_amp(pli_coords)[np.newaxis]
+s = np.append(s, s, axis=0)
+#plt.scatter(ds.mesh2d_face_x,ds.mesh2d_face_y,1,s,cmap='jet')
+
+#
+# interpolate barotropic velocities to dflowfm grid
+#
+f_amp = RegularGridInterpolator((lat,lon), ubar, bounds_error=False, fill_value=np.nan)
+pli_coords = np.moveaxis(np.stack([ds.mesh2d_face_y.data,ds.mesh2d_face_x.data]),0,-1) # comparable to transpose...
+ucx = f_amp(pli_coords)[np.newaxis]
+ucx = np.append(ucx, ucx, axis=0)
+f_amp = RegularGridInterpolator((lat,lon), vbar)
+pli_coords = np.moveaxis(np.stack([ds.mesh2d_face_y.data,ds.mesh2d_face_x.data]),0,-1) # comparable to transpose...
+ucy = f_amp(pli_coords)[np.newaxis]
+ucy = np.append(ucy, ucy, axis=0)
+
+#
+# interpolate unorm to dflowfm grid
+# 
+
+#unorm = np.array([])
+#gds = xarray.open_dataset(fpath+'oceaneddy_expt00_map.nc')
+#
+## using nearest neighbour search
+#from sklearn.neighbors import BallTree
+## Setup Balltree using ds.mesh2d_face_x,_yzw as reference dataset
+## Use Haversine calculate distance between points on the earth from lat/long
+## haversine - https://pypi.org/project/haversine/ 
+## ds.mesh2d_face_x,_yzw are the lon lat points where we HAVE ucx and ucy
+#tree = BallTree(np.deg2rad(np.swapaxes([ds.mesh2d_face_x.data, ds.mesh2d_face_y.data],0,1)), metric='haversine')
+#
+## first figure out if its a vertical or horizontal edge
+## then interpolate to that location and append to unorm
+#for i in np.arange(0, np.shape(gds.mesh2d_edge_faces.data)[0], 1):
+#    if (np.diff(gds.mesh2d_face_x.data[gds.mesh2d_edge_faces.data[i,:].astype(int)-1]) == 0): # check y-coords to see if the first one is bigger/smaller then adjust velocities
+#        # we want to find ds.mesh2d_face_x and ds.mesh2d_face_y that are closest to gds.mesh2d_edge_x.data[i] and gds.mesh2d_edge_y.data[i]
+#        # use k = 3 for 3 closest neighbors
+#        distances, indices = tree.query(np.deg2rad(np.c_[gds.mesh2d_edge_x.data[i], gds.mesh2d_edge_y.data[i]]), k = 3)
+#        #unorm = np.append(unorm, ucx[0,indices[np.where(distances == distances.min())]])
+#        unorm = np.append(unorm, np.mean(ucy[0,indices[0,:2]])) # take mean value of closest two points
+#    elif (np.diff(gds.mesh2d_face_x.data[gds.mesh2d_edge_faces.data[i,:].astype(int)-1]) != 0):
+#        distances, indices = tree.query(np.deg2rad(np.c_[gds.mesh2d_edge_x.data[i], gds.mesh2d_edge_y.data[i]]), k = 3)
+#        #unorm = np.append(unorm, ucy[0,indices[np.where(distances == distances.min())]])
+#        unorm = np.append(unorm, np.mean(ucx[0,indices[0,:2]])) # take mean value of closest two points    
+##plt.scatter(gds.mesh2d_edge_x, gds.mesh2d_edge_y, 1, unorm)    
+#
+#unorm2 = np.resize(unorm, np.shape(ds.FlowLink_xu))
+#unorm2 = unorm2[np.newaxis]
+##plt.scatter(ds.FlowLink_xu, ds.FlowLink_yu, 1, unorm2)
+
+#
+# write to dflowfm netcdf restart file
+#
+wds = xarray.Dataset()
+wds['wgs84'] = ds.wgs84
+wds['mesh2d'] = ds.mesh2d
+wds['mesh2d_node_z'] = ds.mesh2d_node_z
+wds['mesh2d_edge_nodes'] = ds.mesh2d_edge_nodes
+wds['mesh2d_face_nodes'] = ds.mesh2d_face_nodes
+wds['mesh2d_edge_faces'] = ds.mesh2d_edge_faces
+wds['mesh2d_face_x_bnd'] = ds.mesh2d_face_x_bnd
+wds['mesh2d_face_y_bnd'] = ds.mesh2d_face_y_bnd
+wds['mesh2d_edge_type'] = ds.mesh2d_edge_type
+wds['mesh2d_flowelem_ba'] = ds.mesh2d_flowelem_ba
+wds['mesh2d_flowelem_bl'] = ds.mesh2d_flowelem_bl
+wds['timestep'] = ds.timestep
+wds['mesh2d_Numlimdt'] = ds.mesh2d_Numlimdt
+wds['mesh2d_waterdepth'] = ds.mesh2d_waterdepth
+wds['mesh2d_s1'] = xarray.DataArray(data=s, name=ds.mesh2d_s1.name, dims=ds.mesh2d_s1.dims, attrs=ds.mesh2d_s1.attrs) #wds['mesh2d_s1'] = ds.mesh2d_s1
+wds['mesh2d_s0'] = xarray.DataArray(data=s, name=ds.mesh2d_s0.name, dims=ds.mesh2d_s0.dims, attrs=ds.mesh2d_s0.attrs) #wds['mesh2d_s0'] = ds.mesh2d_s0
+wds['mesh2d_u1'] = ds.mesh2d_u1
+wds['mesh2d_u0'] = ds.mesh2d_u0
+wds['mesh2d_ucx'] = xarray.DataArray(data=ucx, name=ds.mesh2d_ucx.name, dims=ds.mesh2d_ucx.dims, attrs=ds.mesh2d_ucx.attrs)
+wds['mesh2d_ucy'] = xarray.DataArray(data=ucy, name=ds.mesh2d_ucy.name, dims=ds.mesh2d_ucy.dims, attrs=ds.mesh2d_ucy.attrs)
+wds['mesh2d_ucmag'] = ds.mesh2d_ucmag
+wds['mesh2d_q1'] = ds.mesh2d_q1
+wds['mesh2d_viu'] = ds.mesh2d_viu
+wds['mesh2d_diu'] = ds.mesh2d_diu
+wds['mesh2d_taus'] = ds.mesh2d_taus
+wds['mesh2d_czs'] = ds.mesh2d_czs
+wds['mesh2d_czu'] = ds.mesh2d_czu
+wds.attrs=ds.attrs
+
+fname = "oceaneddy_init_map.nc"
+try:
+    os.remove(fpath+fname)
+except OSError:
+    pass
+print("writing datastack to netcdf4 :: "+fpath+fname)
+wds.to_netcdf(fpath+fname, 'w', 'NETCDF4')
+
+
+##%%
+##
+## plot vortex
+##
+#fig, ax = plt.subplots(figsize=(15, 10))
+#pc = plt.contourf(lon, lat, zeta, vmin = 0, vmax = 1, cmap="jet")
+##c = plt.contourf(lon, lat, ubar, vmin = -0.4, vmax = 0.4, cmap="jet")
+#ax.set_title('%s (%s)'%("Initial condition: zeta", "m"))
+#ax.set_aspect('equal')
+#fig.colorbar(pc, ax=ax)
+#xticks = np.linspace(np.min(lon),
+#                     np.max(lon),
+#                     num = 5,
+#                     endpoint = True)
+#yticks = np.linspace(np.min(lat),
+#                     np.max(lat),
+#                     num = 5,
+#                     endpoint = True)
+#ax.set_xticks(xticks)
+#ax.set_xlabel('%s (%s)'%("Longitude", "degrees E"))
+#ax.set_yticks(yticks)
+#ax.set_ylabel('%s (%s)'%("Latitude", "degrees N"))
+#ax = plt.quiver(lon, lat, u[-1, :, :], v[-1, :, :], color = "w", scale = 50)
+#
+
