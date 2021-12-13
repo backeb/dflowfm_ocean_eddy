@@ -24,7 +24,7 @@ import xarray as xr
 import numpy as np
 
 
-fname = 'C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\DFM_OUTPUT_oceaneddy_'+expt+'\\oceaneddy_'+expt+'_map.nc'
+fname = 'C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\DFM_OUTPUT_ocean_eddy_'+expt+'\\ocean_eddy_'+expt+'_map.nc'
 ugrid_all = get_netdata(file_nc=fname)
 ds = xr.open_dataset(fname)
 
