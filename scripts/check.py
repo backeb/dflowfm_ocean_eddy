@@ -9,27 +9,44 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import numpy as np
 
-fpath = 'C:\\Users\\backeber\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\restart_template_for_make_dflowfm_vortex_v3\\'
+cd C:\Users\backeber\OneDrive - Stichting Deltares\Desktop\Project-D-HYDRO-Phase-4\dflowfm\dflowfm_serial\map_init_old_netcdf_dx30e3 
+ds = xr.open_dataset("oceaneddy_init_map.nc")
+plt.scatter(ds.FlowElem_xcc,ds.FlowElem_ycc,1,ds.s1[0,:])
+plt.scatter(ds.FlowElem_xcc,ds.FlowElem_ycc,1,ds.ucx[0,:])
+plt.scatter(ds.FlowElem_xcc,ds.FlowElem_ycc,1,ds.ucy[0,:])
+plt.scatter(ds.FlowLink_xu,ds.FlowLink_yu,1,ds.unorm[0,:])
 
-rst = xr.open_dataset(fpath+'oceaneddy_init_rst.nc')
-plt.figure(),plt.scatter(rst.FlowElem_xzw, rst.FlowElem_yzw, 5, rst.s1)
-plt.figure(),plt.scatter(rst.FlowElem_xzw, rst.FlowElem_yzw, 5, rst.ucx)
-plt.figure(),plt.scatter(rst.FlowElem_xzw, rst.FlowElem_yzw, 5, rst.ucy)
-plt.figure(),plt.scatter(rst.FlowLink_xu, rst.FlowLink_yu, 5, rst.unorm)
-plt.figure(),plt.scatter(rst.FlowLink_xu, rst.FlowLink_yu, 5, rst.u0)
+cd C:\Users\backeber\OneDrive - Stichting Deltares\Desktop\Project-D-HYDRO-Phase-4\dflowfm\dflowfm_serial\map_init_old_netcdf 
+ds2 = xr.open_dataset("oceaneddy_init_map.nc")
+plt.scatter(ds2.FlowElem_xcc,ds2.FlowElem_ycc,1,ds2.s1[0,:])
+plt.scatter(ds2.FlowElem_xcc,ds2.FlowElem_ycc,1,ds2.ucx[0,:])
+plt.scatter(ds2.FlowElem_xcc,ds2.FlowElem_ycc,1,ds2.ucy[0,:])
+plt.scatter(ds2.FlowLink_xu,ds2.FlowLink_yu,1,ds2.unorm[0,:])
 
-#mp = xr.open_dataset(fpath+'../DFM_OUTPUT_oceaneddy_expt00/oceaneddy_expt00_map.nc')
-#mp = xr.open_dataset(fpath+'oceaneddy_expt00_map.nc')
-plt.figure(),plt.scatter(mp.mesh2d_face_x, mp.mesh2d_face_y, 5, mp.mesh2d_s1[0,:])
-plt.figure(),plt.scatter(mp.mesh2d_face_x, mp.mesh2d_face_y, 5, mp.mesh2d_ucx[0,:])
-plt.figure(),plt.scatter(mp.mesh2d_face_x, mp.mesh2d_face_y, 5, mp.mesh2d_ucy[0,:])
-plt.figure(),plt.scatter(mp.mesh2d_edge_x, mp.mesh2d_edge_y, 5, mp.mesh2d_u1[0,:])
+cd C:\Users\backeber\OneDrive - Stichting Deltares\Desktop\Project-D-HYDRO-Phase-4\dflowfm\dflowfm_serial\init_expt01
+ds = xr.open_dataset("oceaneddy_init_rst.nc")
+plt.scatter(ds.FlowElem_xzw,ds.FlowElem_yzw,1,ds.s1[0,:])
+plt.scatter(ds.FlowElem_xzw,ds.FlowElem_yzw,1,ds.ucx[0,:])
+plt.scatter(ds.FlowElem_xzw,ds.FlowElem_yzw,1,ds.ucy[0,:])
+plt.scatter(ds.FlowLink_xu,ds.FlowLink_yu,1,ds.unorm[0,:])
 
-ds1 = xr.open_dataset(f"C:/Users/backeber/OneDrive - Stichting Deltares/Desktop/Project-D-HYDRO-Phase-4/dflowfm/dflowfm_serial/restart_template_for_make_dflowfm_vortex/oceaneddy_expt00_map.nc")
-ds2 = xr.open_dataset(f"C:/Users/backeber/OneDrive - Stichting Deltares/Desktop/Project-D-HYDRO-Phase-4/dflowfm/dflowfm_serial/restart_template_for_make_dflowfm_vortex_v3/oceaneddy_expt00_map.nc")
+cd C:\Users\backeber\OneDrive - Stichting Deltares\Desktop\Project-D-HYDRO-Phase-4\dflowfm\dflowfm_serial\init_expt02
+ds = xr.open_dataset("oceaneddy_init_rst.nc")
+plt.scatter(ds.FlowElem_xzw,ds.FlowElem_yzw,1,ds.s1[0,:])
+plt.scatter(ds.FlowElem_xzw,ds.FlowElem_yzw,1,ds.ucx[0,:])
+plt.scatter(ds.FlowElem_xzw,ds.FlowElem_yzw,1,ds.ucy[0,:])
+plt.scatter(ds.FlowLink_xu,ds.FlowLink_yu,1,ds.unorm[0,:])
 
-mp = xr.open_dataset(f'C:/Users/backeber/OneDrive - Stichting Deltares/Desktop/Project-D-HYDRO-Phase-4/dflowfm/dflowfm_serial/restart_template_for_make_dflowfm_vortex_v3/oceaneddy_init_map.nc')
-plt.figure(),plt.scatter(mp.FlowElem_xcc, mp.FlowElem_ycc, 5, mp.s1[0,:])
-plt.figure(),plt.scatter(mp.FlowElem_xcc, mp.FlowElem_ycc, 5, mp.ucx[0,:])
-plt.figure(),plt.scatter(mp.FlowElem_xcc, mp.FlowElem_ycc, 5, mp.ucy[0,:])
-plt.figure(),plt.scatter(mp.FlowLink_xu, mp.FlowLink_yu, 5, mp.unorm[0,:])
+cd C:\Users\backeber\OneDrive - Stichting Deltares\Desktop\Project-D-HYDRO-Phase-4\dflowfm\dflowfm_serial\init_expt03
+ds = xr.open_dataset("oceaneddy_init_rst.nc")
+plt.scatter(ds.FlowElem_xzw,ds.FlowElem_yzw,1,ds.s1[0,:])
+plt.scatter(ds.FlowElem_xzw,ds.FlowElem_yzw,1,ds.ucx[0,:])
+plt.scatter(ds.FlowElem_xzw,ds.FlowElem_yzw,1,ds.ucy[0,:])
+plt.scatter(ds.FlowLink_xu,ds.FlowLink_yu,1,ds.unorm[0,:])
+
+cd C:\Users\backeber\OneDrive - Stichting Deltares\Desktop\Project-D-HYDRO-Phase-4\dflowfm\dflowfm_serial\init_expt04
+ds = xr.open_dataset("oceaneddy_init_map.nc")
+plt.scatter(ds.FlowElem_xcc,ds.FlowElem_ycc,1,ds.s1[0,:])
+plt.scatter(ds.FlowElem_xcc,ds.FlowElem_ycc,1,ds.ucx[0,:])
+plt.scatter(ds.FlowElem_xcc,ds.FlowElem_ycc,1,ds.ucy[0,:])
+plt.scatter(ds.FlowLink_xu,ds.FlowLink_yu,1,ds.unorm[0,:])

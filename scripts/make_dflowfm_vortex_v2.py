@@ -21,7 +21,11 @@ Ref:    Penven, P., L. Debreu, P. Marchesiello et J.C. McWilliams,
 
 @author: backeb
 """
-#%%
+#
+# user defined stuff
+#
+expt = 'expt04'
+
 # 
 # import libraries
 #
@@ -35,7 +39,7 @@ import os
 #
 # Parameters for the grid
 #
-dx = 30e3;                  # Horizontal resolution m-direction
+dx = 1000#30e3;                  # Horizontal resolution m-direction
 xmax = 900e3;               # Half the domain length
 H0 = 5000;                  # Depth
 H = 2500;                   # Level of no-motion
@@ -208,14 +212,14 @@ vbar=np.squeeze(hv/D_v);
 #
 # create function and interpolate to dflowfm meshgrid
 #
-fpath = 'C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\restart_template_for_make_dflowfm_vortex\\'
+fpath = 'C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\dfm_old_nctmplt\\'
 ds = xarray.open_dataset(fpath+'oceaneddy_expt00_map.nc')
-lon_minmax = [np.min(ds.mesh2d_face_x.data), np.max(ds.mesh2d_face_x.data)]
-lat_minmax = [np.min(ds.mesh2d_face_y.data), np.max(ds.mesh2d_face_y.data)]
+lon_minmax = [np.min(ds.FlowElem_xcc.data), np.max(ds.FlowElem_xcc.data)]
+lat_minmax = [np.min(ds.FlowElem_ycc.data), np.max(ds.FlowElem_ycc.data)]
 dlon = (lon_minmax[1]-lon_minmax[0])/(len(x))
 dlat = (lat_minmax[1]-lat_minmax[0])/(len(x))
 lon = np.linspace(lon_minmax[0]-dlon/2, lon_minmax[1]+dlon/2, len(x))
-lat = np.linspace(lat_minmax[0]-dlat/2, lat_minmax[1]+dlon/2, len(y))
+lat = np.linspace(lat_minmax[0]-dlat/2, lat_minmax[1]+dlat/2, len(y))
 dlon = np.mean(np.diff(lon))
 dlat = np.mean(np.diff(lat))
 
@@ -225,97 +229,80 @@ dlat = np.mean(np.diff(lat))
 #
 f_amp = RegularGridInterpolator((lat,lon), zeta, bounds_error=False, fill_value=np.nan) 
 #f_amp = RegularGridInterpolator((lon,lat), zeta, bounds_error=False, fill_value=np.nan) 
-pli_coords = np.moveaxis(np.stack([ds.mesh2d_face_y.data,ds.mesh2d_face_x.data]),0,-1) # comparable to transpose...
+pli_coords = np.moveaxis(np.stack([ds.FlowElem_ycc.data,ds.FlowElem_xcc.data]),0,-1) # comparable to transpose...
 s = f_amp(pli_coords)[np.newaxis]
 s = np.append(s, s, axis=0)
-#plt.scatter(ds.mesh2d_face_x,ds.mesh2d_face_y,1,s,cmap='jet')
+#plt.scatter(ds.FlowElem_xcc,ds.FlowElem_ycc,1,s,cmap='jet')
 
 #
 # interpolate barotropic velocities to dflowfm grid
 #
 f_amp = RegularGridInterpolator((lat,lon), ubar, bounds_error=False, fill_value=np.nan)
-pli_coords = np.moveaxis(np.stack([ds.mesh2d_face_y.data,ds.mesh2d_face_x.data]),0,-1) # comparable to transpose...
+pli_coords = np.moveaxis(np.stack([ds.FlowElem_ycc.data,ds.FlowElem_xcc.data]),0,-1) # comparable to transpose...
 ucx = f_amp(pli_coords)[np.newaxis]
 ucx = np.append(ucx, ucx, axis=0)
 f_amp = RegularGridInterpolator((lat,lon), vbar)
-pli_coords = np.moveaxis(np.stack([ds.mesh2d_face_y.data,ds.mesh2d_face_x.data]),0,-1) # comparable to transpose...
+pli_coords = np.moveaxis(np.stack([ds.FlowElem_ycc.data,ds.FlowElem_xcc.data]),0,-1) # comparable to transpose...
 ucy = f_amp(pli_coords)[np.newaxis]
 ucy = np.append(ucy, ucy, axis=0)
 
 #
-# interpolate unorm to dflowfm grid
-# 
-
-#unorm = np.array([])
-#gds = xarray.open_dataset(fpath+'oceaneddy_expt00_map.nc')
-#
-## using nearest neighbour search
-#from sklearn.neighbors import BallTree
-## Setup Balltree using ds.mesh2d_face_x,_yzw as reference dataset
-## Use Haversine calculate distance between points on the earth from lat/long
-## haversine - https://pypi.org/project/haversine/ 
-## ds.mesh2d_face_x,_yzw are the lon lat points where we HAVE ucx and ucy
-#tree = BallTree(np.deg2rad(np.swapaxes([ds.mesh2d_face_x.data, ds.mesh2d_face_y.data],0,1)), metric='haversine')
-#
-## first figure out if its a vertical or horizontal edge
-## then interpolate to that location and append to unorm
-#for i in np.arange(0, np.shape(gds.mesh2d_edge_faces.data)[0], 1):
-#    if (np.diff(gds.mesh2d_face_x.data[gds.mesh2d_edge_faces.data[i,:].astype(int)-1]) == 0): # check y-coords to see if the first one is bigger/smaller then adjust velocities
-#        # we want to find ds.mesh2d_face_x and ds.mesh2d_face_y that are closest to gds.mesh2d_edge_x.data[i] and gds.mesh2d_edge_y.data[i]
-#        # use k = 3 for 3 closest neighbors
-#        distances, indices = tree.query(np.deg2rad(np.c_[gds.mesh2d_edge_x.data[i], gds.mesh2d_edge_y.data[i]]), k = 3)
-#        #unorm = np.append(unorm, ucx[0,indices[np.where(distances == distances.min())]])
-#        unorm = np.append(unorm, np.mean(ucy[0,indices[0,:2]])) # take mean value of closest two points
-#    elif (np.diff(gds.mesh2d_face_x.data[gds.mesh2d_edge_faces.data[i,:].astype(int)-1]) != 0):
-#        distances, indices = tree.query(np.deg2rad(np.c_[gds.mesh2d_edge_x.data[i], gds.mesh2d_edge_y.data[i]]), k = 3)
-#        #unorm = np.append(unorm, ucy[0,indices[np.where(distances == distances.min())]])
-#        unorm = np.append(unorm, np.mean(ucx[0,indices[0,:2]])) # take mean value of closest two points    
-##plt.scatter(gds.mesh2d_edge_x, gds.mesh2d_edge_y, 1, unorm)    
-#
-#unorm2 = np.resize(unorm, np.shape(ds.FlowLink_xu))
-#unorm2 = unorm2[np.newaxis]
-##plt.scatter(ds.FlowLink_xu, ds.FlowLink_yu, 1, unorm2)
-
-#
-# write to dflowfm netcdf restart file
+# write to dflowfm netcdf map file
 #
 wds = xarray.Dataset()
+wds['mesh2d_enc_x'] = ds.mesh2d_enc_x
+wds['mesh2d_enc_y'] = ds.mesh2d_enc_y
+wds['mesh2d_enc_node_count'] = ds.mesh2d_enc_node_count
+wds['mesh2d_enc_part_node_count'] = ds.mesh2d_enc_part_node_count
+wds['mesh2d_enc_interior_ring'] = ds.mesh2d_enc_interior_ring
+wds['mesh2d_enclosure_container'] = ds.mesh2d_enclosure_container
+wds['Mesh2D'] = ds.Mesh2D
 wds['wgs84'] = ds.wgs84
-wds['mesh2d'] = ds.mesh2d
-wds['mesh2d_node_z'] = ds.mesh2d_node_z
-wds['mesh2d_edge_nodes'] = ds.mesh2d_edge_nodes
-wds['mesh2d_face_nodes'] = ds.mesh2d_face_nodes
-wds['mesh2d_edge_faces'] = ds.mesh2d_edge_faces
-wds['mesh2d_face_x_bnd'] = ds.mesh2d_face_x_bnd
-wds['mesh2d_face_y_bnd'] = ds.mesh2d_face_y_bnd
-wds['mesh2d_edge_type'] = ds.mesh2d_edge_type
-wds['mesh2d_flowelem_ba'] = ds.mesh2d_flowelem_ba
-wds['mesh2d_flowelem_bl'] = ds.mesh2d_flowelem_bl
+wds['NetNode_z'] = ds.NetNode_z
+wds['NetLink'] = ds.NetLink
+wds['NetLinkType'] = ds.NetLinkType
+wds['NetElemNode'] = ds.NetElemNode
+wds['NetElemLink'] = ds.NetElemLink
+wds['NetLinkContour_x'] = ds.NetLinkContour_x
+wds['NetLinkContour_y'] = ds.NetLinkContour_y
+wds['NetLink_xu'] = ds.NetLink_xu
+wds['NetLink_yu'] = ds.NetLink_yu
+wds['BndLink'] = ds.BndLink
+wds['FlowElem_zcc'] = ds.FlowElem_zcc
+wds['FlowElem_bac'] = ds.FlowElem_bac
+wds['FlowElem_xzw'] = ds.FlowElem_xzw
+wds['FlowElem_yzw'] = ds.FlowElem_yzw
+wds['FlowElemContour_x'] = ds.FlowElemContour_x
+wds['FlowElemContour_y'] = ds.FlowElemContour_y
+wds['FlowElem_bl'] = ds.FlowElem_bl
+wds['ElemLink'] = ds.ElemLink
+wds['FlowLink'] = ds.FlowLink
+wds['FlowLinkType'] = ds.FlowLinkType
 wds['timestep'] = ds.timestep
-wds['mesh2d_Numlimdt'] = ds.mesh2d_Numlimdt
-wds['mesh2d_waterdepth'] = ds.mesh2d_waterdepth
-wds['mesh2d_s1'] = xarray.DataArray(data=s, name=ds.mesh2d_s1.name, dims=ds.mesh2d_s1.dims, attrs=ds.mesh2d_s1.attrs) #wds['mesh2d_s1'] = ds.mesh2d_s1
-wds['mesh2d_s0'] = xarray.DataArray(data=s, name=ds.mesh2d_s0.name, dims=ds.mesh2d_s0.dims, attrs=ds.mesh2d_s0.attrs) #wds['mesh2d_s0'] = ds.mesh2d_s0
-wds['mesh2d_u1'] = ds.mesh2d_u1
-wds['mesh2d_u0'] = ds.mesh2d_u0
-wds['mesh2d_ucx'] = xarray.DataArray(data=ucx, name=ds.mesh2d_ucx.name, dims=ds.mesh2d_ucx.dims, attrs=ds.mesh2d_ucx.attrs)
-wds['mesh2d_ucy'] = xarray.DataArray(data=ucy, name=ds.mesh2d_ucy.name, dims=ds.mesh2d_ucy.dims, attrs=ds.mesh2d_ucy.attrs)
-wds['mesh2d_ucmag'] = ds.mesh2d_ucmag
-wds['mesh2d_q1'] = ds.mesh2d_q1
-wds['mesh2d_viu'] = ds.mesh2d_viu
-wds['mesh2d_diu'] = ds.mesh2d_diu
-wds['mesh2d_taus'] = ds.mesh2d_taus
-wds['mesh2d_czs'] = ds.mesh2d_czs
-wds['mesh2d_czu'] = ds.mesh2d_czu
+wds['s1'] = xarray.DataArray(data=s, name=ds.s1.name, dims=ds.s1.dims, attrs=ds.s1.attrs) #wds['s1'] = ds.s1
+wds['s0'] = xarray.DataArray(data=s, name=ds.s0.name, dims=ds.s0.dims, attrs=ds.s0.attrs) #wds['s1'] = ds.s1
+wds['waterdepth'] = ds.waterdepth
+wds['numlimdt'] = ds.numlimdt
+wds['taus'] = ds.taus
+wds['unorm'] = ds.unorm
+wds['u0'] = ds.u0
+wds['q1'] = ds.q1
+wds['viu'] = ds.viu
+wds['diu'] = ds.diu
+wds['ucx'] = xarray.DataArray(data=ucx, name=ds.ucx.name, dims=ds.ucx.dims, attrs=ds.ucx.attrs)
+wds['ucy'] = xarray.DataArray(data=ucy, name=ds.ucy.name, dims=ds.ucy.dims, attrs=ds.ucy.attrs)
+wds['czs'] = ds.czs
+wds['czu'] = ds.czu
 wds.attrs=ds.attrs
 
 fname = "oceaneddy_init_map.nc"
 try:
-    os.remove(fpath+fname)
+    os.remove(fpath+'..\\init_'+expt+'\\'+fname)
 except OSError:
     pass
-print("writing datastack to netcdf4 :: "+fpath+fname)
-wds.to_netcdf(fpath+fname, 'w', 'NETCDF4')
+
+wds.to_netcdf(fpath+'..\\init_'+expt+'\\'+fname, 'w', 'NETCDF4')
+
 
 
 ##%%

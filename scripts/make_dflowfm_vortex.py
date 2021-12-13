@@ -21,7 +21,12 @@ Ref:    Penven, P., L. Debreu, P. Marchesiello et J.C. McWilliams,
 
 @author: backeb
 """
-#%%
+#
+# user defined stuff
+#
+expt = 'expt03'
+
+
 # 
 # import libraries
 #
@@ -208,7 +213,7 @@ vbar=np.squeeze(hv/D_v);
 #
 # create function and interpolate to dflowfm meshgrid
 #
-fpath = 'C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\restart_template_for_make_dflowfm_vortex\\'
+fpath = 'C:\\Users\\backeber\\OneDrive - Stichting Deltares\\Desktop\\Project-D-HYDRO-Phase-4\\dflowfm\\dflowfm_serial\\dfm_new_nctmplt\\'
 ds = xarray.open_dataset(fpath+'oceaneddy_expt00_20010101_000000_rst.nc')
 lon_minmax = [np.min(ds.FlowElem_xzw.data), np.max(ds.FlowElem_xzw.data)]
 lat_minmax = [np.min(ds.FlowElem_yzw.data), np.max(ds.FlowElem_yzw.data)]
@@ -243,34 +248,35 @@ ucy = f_amp(pli_coords)[np.newaxis]
 # interpolate unorm to dflowfm grid
 # 
 
-unorm = np.array([])
-gds = xarray.open_dataset(fpath+'oceaneddy_expt00_map.nc')
-
-# using nearest neighbour search
-from sklearn.neighbors import BallTree
-# Setup Balltree using ds.FlowElem_xzw,_yzw as reference dataset
-# Use Haversine calculate distance between points on the earth from lat/long
-# haversine - https://pypi.org/project/haversine/ 
-# ds.FlowElem_xzw,_yzw are the lon lat points where we HAVE ucx and ucy
-tree = BallTree(np.deg2rad(np.swapaxes([ds.FlowElem_xzw.data, ds.FlowElem_yzw.data],0,1)), metric='haversine')
-
-# first figure out if its a vertical or horizontal edge
-# then interpolate to that location and append to unorm
-for i in np.arange(0, np.shape(gds.mesh2d_edge_faces.data)[0], 1):
-    if (np.diff(gds.mesh2d_face_x.data[gds.mesh2d_edge_faces.data[i,:].astype(int)-1]) == 0): # check y-coords to see if the first one is bigger/smaller then adjust velocities
-        # we want to find ds.FlowElem_xzw and ds.FlowElem_yzw that are closest to gds.mesh2d_edge_x.data[i] and gds.mesh2d_edge_y.data[i]
-        # use k = 3 for 3 closest neighbors
-        distances, indices = tree.query(np.deg2rad(np.c_[gds.mesh2d_edge_x.data[i], gds.mesh2d_edge_y.data[i]]), k = 3)
-        #unorm = np.append(unorm, ucx[0,indices[np.where(distances == distances.min())]])
-        unorm = np.append(unorm, np.mean(ucy[0,indices[0,:2]])) # take mean value of closest two points
-    elif (np.diff(gds.mesh2d_face_x.data[gds.mesh2d_edge_faces.data[i,:].astype(int)-1]) != 0):
-        distances, indices = tree.query(np.deg2rad(np.c_[gds.mesh2d_edge_x.data[i], gds.mesh2d_edge_y.data[i]]), k = 3)
-        #unorm = np.append(unorm, ucy[0,indices[np.where(distances == distances.min())]])
-        unorm = np.append(unorm, np.mean(ucx[0,indices[0,:2]])) # take mean value of closest two points    
-#plt.scatter(gds.mesh2d_edge_x, gds.mesh2d_edge_y, 1, unorm)    
-
-unorm2 = np.resize(unorm, np.shape(ds.FlowLink_xu))
-unorm2 = unorm2[np.newaxis]
+if expt == 'expt02' or expt == 'expt03':
+    unorm = np.array([])
+    gds = xarray.open_dataset(fpath+'oceaneddy_expt00_map.nc')
+    
+    ## using nearest neighbour search
+    from sklearn.neighbors import BallTree
+    # Setup Balltree using ds.FlowElem_xzw,_yzw as reference dataset
+    # Use Haversine calculate distance between points on the earth from lat/long
+    # haversine - https://pypi.org/project/haversine/ 
+    # ds.FlowElem_xzw,_yzw are the lon lat points where we HAVE ucx and ucy
+    tree = BallTree(np.deg2rad(np.swapaxes([ds.FlowElem_xzw.data, ds.FlowElem_yzw.data],0,1)), metric='haversine')
+    
+    # first figure out if its a vertical or horizontal edge
+    # then interpolate to that location and append to unorm
+    for i in np.arange(0, np.shape(gds.mesh2d_edge_faces.data)[0], 1):
+        if (np.diff(gds.mesh2d_face_x.data[gds.mesh2d_edge_faces.data[i,:].astype(int)-1]) == 0): # check y-coords to see if the first one is bigger/smaller then adjust velocities
+            # we want to find ds.FlowElem_xzw and ds.FlowElem_yzw that are closest to gds.mesh2d_edge_x.data[i] and gds.mesh2d_edge_y.data[i]
+            # use k = 3 for 3 closest neighbors
+            distances, indices = tree.query(np.deg2rad(np.c_[gds.mesh2d_edge_x.data[i], gds.mesh2d_edge_y.data[i]]), k = 3)
+            #unorm = np.append(unorm, ucx[0,indices[np.where(distances == distances.min())]])
+            unorm = np.append(unorm, np.mean(ucy[0,indices[0,:2]])) # take mean value of closest two points
+        elif (np.diff(gds.mesh2d_face_x.data[gds.mesh2d_edge_faces.data[i,:].astype(int)-1]) != 0):
+            distances, indices = tree.query(np.deg2rad(np.c_[gds.mesh2d_edge_x.data[i], gds.mesh2d_edge_y.data[i]]), k = 3)
+            #unorm = np.append(unorm, ucy[0,indices[np.where(distances == distances.min())]])
+            unorm = np.append(unorm, np.mean(ucx[0,indices[0,:2]])) # take mean value of closest two points    
+    #plt.scatter(gds.mesh2d_edge_x, gds.mesh2d_edge_y, 1, unorm)    
+    
+    unorm2 = np.resize(unorm, np.shape(ds.FlowLink_xu))
+    unorm2 = unorm2[np.newaxis]
 #plt.scatter(ds.FlowLink_xu, ds.FlowLink_yu, 1, unorm2)
 
 #
@@ -278,21 +284,33 @@ unorm2 = unorm2[np.newaxis]
 #
 wds = xarray.Dataset()
 wds['timestep'] = ds.timestep
-#wds['s1'] = xarray.DataArray(data=s, name=ds.s1.name, dims=ds.s1.dims, attrs=ds.s1.attrs)
-wds['s1'] = ds.s1
-#wds['s0'] = xarray.DataArray(data=s, name=ds.s0.name, dims=ds.s0.dims, attrs=ds.s0.attrs)
-wds['s0'] = ds.s0
+
+
+
+if expt == 'expt01':
+    wds['s1'] = xarray.DataArray(data=s, name=ds.s1.name, dims=ds.s1.dims, attrs=ds.s1.attrs)
+    wds['s0'] = xarray.DataArray(data=s, name=ds.s0.name, dims=ds.s0.dims, attrs=ds.s0.attrs)
+    wds['ucx'] = xarray.DataArray(data=ucx, name=ds.ucx.name, dims=ds.ucx.dims, attrs=ds.ucx.attrs)
+    wds['ucy'] = xarray.DataArray(data=ucy, name=ds.ucy.name, dims=ds.ucy.dims, attrs=ds.ucy.attrs)
+    wds['unorm'] = ds.unorm # normal component of sea_water_speed
+    wds['u0'] = ds.u0 # normal component of velocity through flow link at previous ti...
+elif expt == 'expt02':
+    wds['s1'] = xarray.DataArray(data=s, name=ds.s1.name, dims=ds.s1.dims, attrs=ds.s1.attrs)
+    wds['s0'] = xarray.DataArray(data=s, name=ds.s0.name, dims=ds.s0.dims, attrs=ds.s0.attrs)
+    wds['ucx'] = xarray.DataArray(data=ucx, name=ds.ucx.name, dims=ds.ucx.dims, attrs=ds.ucx.attrs)
+    wds['ucy'] = xarray.DataArray(data=ucy, name=ds.ucy.name, dims=ds.ucy.dims, attrs=ds.ucy.attrs)
+    wds['unorm'] = xarray.DataArray(data=unorm2, name=ds.unorm.name, dims=ds.unorm.dims, attrs=ds.unorm.attrs)
+    wds['u0'] = xarray.DataArray(data=unorm2, name=ds.u0.name, dims=ds.u0.dims, attrs=ds.u0.attrs)
+elif expt == 'expt03':
+    wds['s1'] = ds.s1
+    wds['s0'] = ds.s0
+    wds['ucx'] = ds.ucx # eastward_sea_water_velocity
+    wds['ucy'] = ds.ucy # northward_sea_water_velocity
+    wds['unorm'] = xarray.DataArray(data=unorm2, name=ds.unorm.name, dims=ds.unorm.dims, attrs=ds.unorm.attrs)
+    wds['u0'] = xarray.DataArray(data=unorm2, name=ds.u0.name, dims=ds.u0.dims, attrs=ds.u0.attrs)
 wds['taus'] = ds.taus # taucurrent in flow element center
 wds['czs'] = ds.czs # Chezy roughness in flow element center
-wds['FlowElem_bl'] = ds.FlowElem_bl # bed level at flow element circumcenter
-wds['ucx'] = ds.ucx # eastward_sea_water_velocity
-#wds['ucx'] = xarray.DataArray(data=ucx, name=ds.ucx.name, dims=ds.ucx.dims, attrs=ds.ucx.attrs)
-wds['ucy'] = ds.ucy # northward_sea_water_velocity
-#wds['ucy'] = xarray.DataArray(data=ucy, name=ds.ucy.name, dims=ds.ucy.dims, attrs=ds.ucy.attrs)
-#wds['unorm'] = ds.unorm # normal component of sea_water_speed
-wds['unorm'] = xarray.DataArray(data=unorm2, name=ds.unorm.name, dims=ds.unorm.dims, attrs=ds.unorm.attrs)
-#wds['u0'] = ds.u0 # normal component of velocity through flow link at previous ti...
-wds['u0'] = xarray.DataArray(data=unorm2, name=ds.u0.name, dims=ds.u0.dims, attrs=ds.u0.attrs)
+wds['FlowElem_bl'] = ds.FlowElem_bl # bed level at flow element circumcenter 
 wds['q1'] = ds.q1 # discharge
 wds['qa'] = ds.qa # discharge used in advection
 wds['squ'] = ds.squ # cell center outcoming flux
@@ -302,11 +320,11 @@ wds.attrs=ds.attrs
 
 fname = "oceaneddy_init_rst.nc"
 try:
-    os.remove(fpath+fname)
+    os.remove(fpath+'..\\init_'+expt+'\\'+fname)
 except OSError:
     pass
-print("writing datastack to netcdf4 :: "+fpath+fname)
-wds.to_netcdf(fpath+fname, 'w', 'NETCDF4')
+
+wds.to_netcdf(fpath+'..\\init_'+expt+'\\'+fname, 'w', 'NETCDF4')
 
 
 ##%%
